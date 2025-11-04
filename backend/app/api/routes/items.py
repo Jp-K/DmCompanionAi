@@ -6,7 +6,7 @@ from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import Chat, ChatCreate, ChatPublic, ChatsPublic, ChatUpdate, Message
-from app.utils import create_embeddings, get_json_content, similarity_search
+
 router = APIRouter(prefix="/items", tags=["items"])
 
 

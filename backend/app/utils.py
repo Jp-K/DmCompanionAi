@@ -6,12 +6,11 @@ from typing import Any
 
 import emails  # type: ignore
 import jwt
+import numpy as np
 from jinja2 import Template
 from jwt.exceptions import InvalidTokenError
-
 from sentence_transformers import SentenceTransformer
-import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity  # type: ignore[import-untyped]
 
 from app.core import security
 from app.core.config import settings
@@ -19,9 +18,9 @@ from app.core.config import settings
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-logging.getLogger('sentence_transformers').setLevel(logging.WARNING)
+logging.getLogger("sentence_transformers").setLevel(logging.WARNING)
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
 @dataclass
@@ -29,25 +28,38 @@ class EmailData:
     html_content: str
     subject: str
 
-def create_embeddings(content):
+
+def create_embeddings(content: list[dict[str, Any]]) -> Any:
     texts = [f"Title: {item['title']}, Text: {item['text']}" for item in content]
     vectors = model.encode(texts, convert_to_numpy=True)
     return vectors
 
-def similarity_search(query, vectors, content):
+
+def similarity_search(
+    query: str, vectors: Any, content: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
     query_vector = model.encode([query], convert_to_numpy=True)
     similarities = cosine_similarity(query_vector, vectors).flatten()
-    indices = np.argsort(-similarities)[:3]  # Top 3 resultados
-    results = [{"title": content[i]["title"], "text": content[i]["text"], "similarity": similarities[i]} for i in indices]
+    indices = np.argsort(-similarities)[:3]  # Top 3 results
+    results = [
+        {
+            "title": content[i]["title"],
+            "text": content[i]["text"],
+            "similarity": float(similarities[i]),
+        }
+        for i in indices
+    ]
     return results
 
-def get_json_content(json_data):
+
+def get_json_content(json_data: dict[str, Any]) -> list[dict[str, str]]:
     result = []
     for item in json_data["Rules Definitions"]["content"]:
         title = item["title"]
         description = item["description"]
         result.append({"title": title, "text": description})
     return result
+
 
 def render_email_template(*, template_name: str, context: dict[str, Any]) -> str:
     template_str = (
@@ -70,7 +82,7 @@ def send_email(
         mail_from=(settings.EMAILS_FROM_NAME, settings.EMAILS_FROM_EMAIL),
     )
     smtp_options = {"host": settings.SMTP_HOST, "port": settings.SMTP_PORT}
-    #smtp_options = {"host": "localhost", "port": "1080"}
+    # smtp_options = {"host": "localhost", "port": "1080"}
     if settings.SMTP_TLS:
         smtp_options["tls"] = True
     elif settings.SMTP_SSL:
@@ -80,7 +92,7 @@ def send_email(
     #     smtp_options["user"] = settings.SMTP_USER
     # if settings.SMTP_PASSWORD:
     #     smtp_options["password"] = settings.SMTP_PASSWORD
-    
+
     logger.info(f"{smtp_options}")
     response = message.send(to=email_to, smtp=smtp_options)
     logger.info(f"send email result: {response}")

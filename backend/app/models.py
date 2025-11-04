@@ -63,10 +63,12 @@ class ChatBase(SQLModel):
     description: str | None = Field(default=None, max_length=255)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+
 class ChatMessageBase(SQLModel):
     content: str = Field(min_length=1, max_length=1000)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     role: str = Field(min_length=1, max_length=50)
+
 
 # Properties to receive on chat creation
 class ChatCreate(ChatBase):
@@ -93,7 +95,9 @@ class Chat(ChatBase, table=True):
 class ChatMessage(ChatMessageBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     content: str = Field(min_length=1, max_length=1000)
-    chat_id: uuid.UUID = Field(foreign_key="chat.id", nullable=False, ondelete="CASCADE")
+    chat_id: uuid.UUID = Field(
+        foreign_key="chat.id", nullable=False, ondelete="CASCADE"
+    )
     created_at: datetime = Field(default_factory=datetime.utcnow)
     role: str = Field(min_length=1, max_length=50)
 
@@ -105,6 +109,7 @@ class ChatPublic(ChatBase):
     id: uuid.UUID
     owner_id: uuid.UUID
 
+
 class ChatMessagePublic(ChatBase):
     id: uuid.UUID
     chat_id: uuid.UUID
@@ -114,9 +119,11 @@ class ChatsPublic(SQLModel):
     data: list[ChatPublic]
     count: int
 
+
 class ChatMessagesPublic(SQLModel):
     data: list[ChatMessagePublic]
     count: int
+
 
 # Generic message
 class Message(SQLModel):
