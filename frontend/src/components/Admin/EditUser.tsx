@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Button,
   Checkbox,
@@ -17,12 +19,8 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import {
-  type ApiError,
-  type UserPublic,
-  type UserUpdate,
-  UsersService,
-} from "../../client"
+import { type UserPublic, type UserUpdate, UsersService } from "../../client"
+import type { ApiError } from "../../client/core/ApiError"
 import useCustomToast from "../../hooks/useCustomToast"
 import { emailPattern, handleError } from "../../utils"
 
@@ -45,7 +43,7 @@ const EditUser = ({ user, isOpen, onClose }: EditUserProps) => {
     handleSubmit,
     reset,
     getValues,
-    formState: { errors, isSubmitting, isDirty },
+    formState: { isSubmitting, errors, isDirty },
   } = useForm<UserUpdateForm>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -107,9 +105,17 @@ const EditUser = ({ user, isOpen, onClose }: EditUserProps) => {
                 <FormErrorMessage>{errors.email.message}</FormErrorMessage>
               )}
             </FormControl>
-            <FormControl mt={4}>
+            <FormControl mt={4} isInvalid={!!errors.full_name}>
               <FormLabel htmlFor="name">Full name</FormLabel>
-              <Input id="name" {...register("full_name")} type="text" />
+              <Input
+                id="name"
+                {...register("full_name")}
+                placeholder="Full name"
+                type="text"
+              />
+              {errors.full_name && (
+                <FormErrorMessage>{errors.full_name.message}</FormErrorMessage>
+              )}
             </FormControl>
             <FormControl mt={4} isInvalid={!!errors.password}>
               <FormLabel htmlFor="password">Set Password</FormLabel>
@@ -146,20 +152,19 @@ const EditUser = ({ user, isOpen, onClose }: EditUserProps) => {
                 </FormErrorMessage>
               )}
             </FormControl>
-            <Flex>
-              <FormControl mt={4}>
+            <Flex mt={4}>
+              <FormControl>
                 <Checkbox {...register("is_superuser")} colorScheme="teal">
                   Is superuser?
                 </Checkbox>
               </FormControl>
-              <FormControl mt={4}>
+              <FormControl>
                 <Checkbox {...register("is_active")} colorScheme="teal">
                   Is active?
                 </Checkbox>
               </FormControl>
             </Flex>
           </ModalBody>
-
           <ModalFooter gap={3}>
             <Button
               variant="primary"

@@ -1,5 +1,7 @@
+"use client"
+
 import { Button, Container, Text } from "@chakra-ui/react"
-import { Link } from "@tanstack/react-router"
+import Link from "next/link"
 
 const NotFound = () => {
   return (
@@ -25,7 +27,7 @@ const NotFound = () => {
         <Text fontSize="md">Page not found.</Text>
         <Button
           as={Link}
-          to="/"
+          href="/"
           color="ui.main"
           borderColor="ui.main"
           variant="outline"

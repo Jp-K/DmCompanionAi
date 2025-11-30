@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Box,
   Button,
@@ -15,12 +17,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import {
-  type ApiError,
-  type UserPublic,
-  type UserUpdateMe,
-  UsersService,
-} from "../../client"
+import { type UserPublic, type UserUpdateMe, UsersService } from "../../client"
+import type { ApiError } from "../../client/core/ApiError"
 import useAuth from "../../hooks/useAuth"
 import useCustomToast from "../../hooks/useCustomToast"
 import { emailPattern, handleError } from "../../utils"
@@ -60,11 +58,11 @@ const UserInformation = () => {
       handleError(err, showToast)
     },
     onSettled: () => {
-      queryClient.invalidateQueries()
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] })
     },
   })
 
-  const onSubmit: SubmitHandler<UserUpdateMe> = async (data) => {
+  const onSubmit: SubmitHandler<UserPublic> = async (data) => {
     mutation.mutate(data)
   }
 

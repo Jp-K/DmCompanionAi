@@ -54,12 +54,12 @@ export class ChatsService {
    * @throws ApiError
    */
   public static sendMessage(
-    payload: {message: string, id: string},
+    payload: {message: string, id?: string},
   ): CancelablePromise<any> {
     return __request(OpenAPI, {
       method: "POST",
       url: "/api/v1/chats/message/",
-      body: payload,
+      body: payload.id ? payload : { message: payload.message },
       mediaType: "application/json",
       errors: {
         422: "Validation Error",
@@ -73,14 +73,14 @@ export class ChatsService {
    * @throws ApiError
    */
   public static sendMessageStreaming(
-    payload: { message: string, id: string },
+    payload: { message: string, id?: string },
     onMessage: (message: string) => void,
     onFinished: () => void,
   ): CancelablePromise<void> {
     return requestStreaming(OpenAPI, {
       method: "POST",
       url: "/api/v1/chats/message/streaming/",
-      body: payload,
+      body: payload.id ? payload : { message: payload.message },
       mediaType: "application/json",
       errors: {
         422: "Validation Error",

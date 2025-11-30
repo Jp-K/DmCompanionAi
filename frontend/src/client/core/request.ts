@@ -421,7 +421,7 @@ export const requestStreaming = (
         responseType: 'stream',
         withCredentials: config.WITH_CREDENTIALS,
         onDownloadProgress: (progressEvent) => {
-          const responseStream = progressEvent.event.target.response;
+          const responseStream = (progressEvent.event as any).target.response;
           if (typeof responseStream === "string" && responseStream.includes("[FINISHED]")) {
             onMessage(responseStream.replace("[FINISHED]", ""));
             onFinished();

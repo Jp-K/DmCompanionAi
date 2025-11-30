@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Badge,
   Container,
@@ -35,4 +37,5 @@ const Appearance = () => {
     </>
   )
 }
+
 export default Appearance

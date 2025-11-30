@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Box,
   Button,
@@ -12,7 +14,8 @@ import {
 import { useMutation } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import { type ApiError, type UpdatePassword, UsersService } from "../../client"
+import { type UpdatePassword, UsersService } from "../../client"
+import type { ApiError } from "../../client/core/ApiError"
 import useCustomToast from "../../hooks/useCustomToast"
 import { confirmPasswordRules, handleError, passwordRules } from "../../utils"
 
@@ -95,7 +98,10 @@ const ChangePassword = () => {
             <FormLabel htmlFor="confirm_password">Confirm Password</FormLabel>
             <Input
               id="confirm_password"
-              {...register("confirm_password", confirmPasswordRules(getValues))}
+              {...register(
+                "confirm_password",
+                confirmPasswordRules(() => getValues() as unknown as Record<string, unknown>)
+              )}
               placeholder="Password"
               type="password"
               w="auto"
@@ -119,4 +125,5 @@ const ChangePassword = () => {
     </>
   )
 }
+
 export default ChangePassword

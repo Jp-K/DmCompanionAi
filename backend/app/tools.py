@@ -131,7 +131,7 @@ class SpellsSearchTool(BaseTool):
                 return "Base de dados de magias não disponível no momento."
             
             with open(json_path, 'r', encoding='utf-8') as file:
-                spells_data = json.load(file)
+                spells_data = json.load(file).get("spells", [])
             
             # Simple search in spell names and descriptions
             query_lower = query.lower()
