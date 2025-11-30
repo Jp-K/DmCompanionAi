@@ -21,6 +21,7 @@ import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutChatListImport } from './routes/_layout/chatList'
 import { Route as LayoutChatImport } from './routes/_layout/chat'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
+import { Route as LayoutScrollsImport } from './routes/_layout/scrolls'
 
 // Create/Update Routes
 
@@ -66,6 +67,11 @@ const LayoutChatListRoute = LayoutChatListImport.update({
 
 const LayoutChatRoute = LayoutChatImport.update({
   path: '/chat',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutScrollsRoute = LayoutScrollsImport.update({
+  path: '/scrolls',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -128,6 +134,7 @@ export const routeTree = rootRoute.addChildren([
     LayoutAdminRoute,
     LayoutChatRoute,
     LayoutChatListRoute,
+    LayoutScrollsRoute,
     LayoutSettingsRoute,
     LayoutIndexRoute,
   ]),

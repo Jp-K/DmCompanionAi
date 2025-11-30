@@ -1,3 +1,5 @@
+"use client"
+
 import { useToast } from "@chakra-ui/react"
 import { useCallback } from "react"
 

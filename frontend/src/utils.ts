@@ -11,7 +11,7 @@ export const namePattern = {
 }
 
 export const passwordRules = (isRequired = true) => {
-  const rules: any = {
+  const rules: Record<string, unknown> = {
     minLength: {
       value: 8,
       message: "Password must be at least 8 characters",
@@ -26,12 +26,13 @@ export const passwordRules = (isRequired = true) => {
 }
 
 export const confirmPasswordRules = (
-  getValues: () => any,
+  getValues: () => Record<string, unknown>,
   isRequired = true,
 ) => {
-  const rules: any = {
+  const rules: Record<string, unknown> = {
     validate: (value: string) => {
-      const password = getValues().password || getValues().new_password
+      const values = getValues()
+      const password = (values.password || values.new_password) as string
       return value === password ? true : "The passwords do not match"
     },
   }
@@ -43,9 +44,12 @@ export const confirmPasswordRules = (
   return rules
 }
 
-export const handleError = (err: ApiError, showToast: any) => {
-  const errDetail = (err.body as any)?.detail
-  let errorMessage = errDetail || "Something went wrong."
+export const handleError = (
+  err: ApiError,
+  showToast: (title: string, description: string, status: "success" | "error") => void
+) => {
+  const errDetail = (err.body as Record<string, unknown>)?.detail
+  let errorMessage = (errDetail as string) || "Something went wrong."
   if (Array.isArray(errDetail) && errDetail.length > 0) {
     errorMessage = errDetail[0].msg
   }

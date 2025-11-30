@@ -1,38 +1,34 @@
-import React from 'react';
-import {
-    IconButton,
-    useDisclosure
-  } from "@chakra-ui/react"
-  import { BsEye } from "react-icons/bs";
-  import { useNavigate } from "@tanstack/react-router";
-  
-  interface ActionsMenuProps {
-    id: string
-    disabled?: boolean
-  }
-  
-  const viewItem = ({ id, disabled }: ActionsMenuProps) => {
+"use client"
 
-    const navigate = useNavigate();
+import { IconButton } from "@chakra-ui/react"
+import { BsEye } from "react-icons/bs"
+import { useRouter } from "next/navigation"
 
-    function openItem() {
-        console.log("Open item with id: ", id);
-        navigate({ to: `/chat?id=${id}` });
-    }
-  
-    return (
-      <>
-        <IconButton 
-            aria-label="Open chat"
-            isDisabled={disabled}
-            variant={"ghost"}
-            onClick={() => openItem()}
-        >
-            <BsEye />
-        </IconButton>
-      </>
-    )
+interface ActionsOpenItemProps {
+  id: string
+  disabled?: boolean
+}
+
+const ActionsOpenItem = ({ id, disabled }: ActionsOpenItemProps) => {
+  const router = useRouter()
+
+  function openItem() {
+    console.log("Open item with id: ", id)
+    router.push(`/chat?id=${id}`)
   }
-  
-  export default viewItem
-  
+
+  return (
+    <>
+      <IconButton
+        aria-label="Open chat"
+        isDisabled={disabled}
+        variant={"ghost"}
+        onClick={() => openItem()}
+      >
+        <BsEye />
+      </IconButton>
+    </>
+  )
+}
+
+export default ActionsOpenItem

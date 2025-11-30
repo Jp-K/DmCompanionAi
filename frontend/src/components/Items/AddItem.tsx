@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Button,
   FormControl,
@@ -15,7 +17,8 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import { type ApiError, type ItemCreate, ChatsService } from "../../client"
+import { type ItemCreate, ChatsService } from "../../client"
+import type { ApiError } from "../../client/core/ApiError"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 

@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Box,
   Drawer,
@@ -7,24 +9,19 @@ import {
   DrawerOverlay,
   Flex,
   IconButton,
-  Image,
   Text,
-  useColorModeValue,
   useDisclosure,
 } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
 import { FiLogOut, FiMenu } from "react-icons/fi"
+import { GiDragonHead } from "react-icons/gi"
 
-import Logo from "/assets/images/fastapi-logo.svg"
 import type { UserPublic } from "../../client"
 import useAuth from "../../hooks/useAuth"
 import SidebarItems from "./SidebarItems"
 
 const Sidebar = () => {
   const queryClient = useQueryClient()
-  const bgColor = useColorModeValue("ui.light", "ui.dark")
-  const textColor = useColorModeValue("ui.dark", "ui.light")
-  const secBgColor = useColorModeValue("ui.secondary", "ui.darkSlate")
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { logout } = useAuth()
@@ -44,31 +41,54 @@ const Sidebar = () => {
         fontSize="20px"
         m={4}
         icon={<FiMenu />}
+        bg="dnd.leather"
+        color="dnd.gold"
+        borderWidth="2px"
+        borderColor="dnd.gold"
+        _hover={{ bg: "dnd.gold", color: "dnd.leather" }}
       />
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
-        <DrawerOverlay />
-        <DrawerContent maxW="250px">
-          <DrawerCloseButton />
+        <DrawerOverlay bg="blackAlpha.800" />
+        <DrawerContent 
+          maxW="250px" 
+          bg="dnd.leather"
+          borderRightWidth="3px"
+          borderColor="dnd.gold"
+        >
+          <DrawerCloseButton color="dnd.gold" />
           <DrawerBody py={8}>
-            <Flex flexDir="column" justify="space-between">
+            <Flex flexDir="column" justify="space-between" h="full">
               <Box>
-                <Image src={Logo} alt="logo" p={6} />
+                <Flex align="center" justify="center" p={4} mb={4}>
+                  <GiDragonHead size={40} color="#C9A227" />
+                  <Text 
+                    fontFamily="'Cinzel', serif" 
+                    fontSize="xl" 
+                    color="dnd.gold" 
+                    ml={2}
+                    fontWeight="bold"
+                  >
+                    DM Companion
+                  </Text>
+                </Flex>
                 <SidebarItems onClose={onClose} />
                 <Flex
                   as="button"
                   onClick={handleLogout}
                   p={2}
-                  color="ui.danger"
+                  mt={4}
+                  color="dnd.crimson"
                   fontWeight="bold"
                   alignItems="center"
+                  _hover={{ color: "#B22222" }}
                 >
                   <FiLogOut />
                   <Text ml={2}>Log out</Text>
                 </Flex>
               </Box>
               {currentUser?.email && (
-                <Text color={textColor} noOfLines={2} fontSize="sm" p={2}>
-                  Logged in as: {currentUser.email}
+                <Text color="dnd.parchment" noOfLines={2} fontSize="sm" p={2} opacity={0.8}>
+                  ⚔️ {currentUser.email}
                 </Text>
               )}
             </Flex>
@@ -78,7 +98,7 @@ const Sidebar = () => {
 
       {/* Desktop */}
       <Box
-        bg={bgColor}
+        bg="dnd.ink"
         p={3}
         h="100vh"
         position="sticky"
@@ -88,23 +108,38 @@ const Sidebar = () => {
         <Flex
           flexDir="column"
           justify="space-between"
-          bg={secBgColor}
+          bg="dnd.leather"
           p={4}
           borderRadius={12}
+          borderWidth="2px"
+          borderColor="dnd.gold"
+          boxShadow="0 0 20px rgba(201, 162, 39, 0.3)"
         >
           <Box>
-            <Image src={Logo} alt="Logo" w="180px" maxW="2xs" p={6} />
+            <Flex align="center" justify="center" p={4} mb={4}>
+              <GiDragonHead size={36} color="#C9A227" />
+              <Text 
+                fontFamily="'Cinzel', serif" 
+                fontSize="lg" 
+                color="dnd.gold" 
+                ml={2}
+                fontWeight="bold"
+              >
+                DM Companion
+              </Text>
+            </Flex>
             <SidebarItems />
           </Box>
           {currentUser?.email && (
             <Text
-              color={textColor}
+              color="dnd.parchment"
               noOfLines={2}
               fontSize="sm"
               p={2}
               maxW="180px"
+              opacity={0.8}
             >
-              Logged in as: {currentUser.email}
+              ⚔️ {currentUser.email}
             </Text>
           )}
         </Flex>

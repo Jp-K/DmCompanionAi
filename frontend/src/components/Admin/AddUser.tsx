@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Button,
   Checkbox,
@@ -131,11 +133,7 @@ const AddUser = ({ isOpen, onClose }: AddUserProps) => {
                 <FormErrorMessage>{errors.password.message}</FormErrorMessage>
               )}
             </FormControl>
-            <FormControl
-              mt={4}
-              isRequired
-              isInvalid={!!errors.confirm_password}
-            >
+            <FormControl mt={4} isRequired isInvalid={!!errors.confirm_password}>
               <FormLabel htmlFor="confirm_password">Confirm Password</FormLabel>
               <Input
                 id="confirm_password"
@@ -167,6 +165,7 @@ const AddUser = ({ isOpen, onClose }: AddUserProps) => {
               </FormControl>
             </Flex>
           </ModalBody>
+
           <ModalFooter gap={3}>
             <Button variant="primary" type="submit" isLoading={isSubmitting}>
               Save

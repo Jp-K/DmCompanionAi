@@ -1,3 +1,5 @@
+"use client"
+
 import {
   AlertDialog,
   AlertDialogBody,
@@ -77,11 +79,25 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
         size={{ base: "sm", md: "md" }}
         isCentered
       >
-        <AlertDialogOverlay>
-          <AlertDialogContent as="form" onSubmit={handleSubmit(onSubmit)}>
-            <AlertDialogHeader>Delete {type}</AlertDialogHeader>
+        <AlertDialogOverlay bg="blackAlpha.800">
+          <AlertDialogContent 
+            as="form" 
+            onSubmit={handleSubmit(onSubmit)}
+            bg="dnd.leather"
+            borderWidth="2px"
+            borderColor="dnd.crimson"
+            boxShadow="0 0 30px rgba(139, 0, 0, 0.5)"
+          >
+            <AlertDialogHeader 
+              fontFamily="'Cinzel', serif" 
+              color="dnd.crimson"
+              borderBottomWidth="1px"
+              borderColor="dnd.crimson"
+            >
+              ⚠️ Delete {type}
+            </AlertDialogHeader>
 
-            <AlertDialogBody>
+            <AlertDialogBody color="dnd.parchment">
               {type === "User" && (
                 <span>
                   All items associated with this user will also be{" "}
@@ -93,12 +109,17 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
 
             <AlertDialogFooter gap={3}>
               <Button variant="danger" type="submit" isLoading={isSubmitting}>
-                Delete
+                🗑️ Delete
               </Button>
               <Button
                 ref={cancelRef}
                 onClick={onClose}
                 isDisabled={isSubmitting}
+                variant="outline"
+                borderColor="dnd.gold"
+                color="dnd.gold"
+                fontFamily="'Cinzel', serif"
+                _hover={{ bg: "rgba(201, 162, 39, 0.2)" }}
               >
                 Cancel
               </Button>

@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Button,
   Container,
@@ -32,4 +34,5 @@ const DeleteAccount = () => {
     </>
   )
 }
+
 export default DeleteAccount

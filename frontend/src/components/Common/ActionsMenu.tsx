@@ -1,3 +1,5 @@
+"use client"
+
 import {
   Button,
   Menu,
@@ -32,18 +34,32 @@ const ActionsMenu = ({ type, value, disabled }: ActionsMenuProps) => {
           as={Button}
           rightIcon={<BsThreeDotsVertical />}
           variant="unstyled"
+          color="dnd.gold"
+          _hover={{ color: "dnd.goldLight" }}
         />
-        <MenuList>
+        <MenuList
+          bg="dnd.leather"
+          borderColor="dnd.gold"
+          borderWidth="2px"
+          boxShadow="0 0 15px rgba(0, 0, 0, 0.5)"
+        >
           <MenuItem
             onClick={editUserModal.onOpen}
             icon={<FiEdit fontSize="16px" />}
+            bg="transparent"
+            color="dnd.parchment"
+            fontFamily="'Cinzel', serif"
+            _hover={{ bg: "rgba(201, 162, 39, 0.2)", color: "dnd.gold" }}
           >
             Edit {type}
           </MenuItem>
           <MenuItem
             onClick={deleteModal.onOpen}
             icon={<FiTrash fontSize="16px" />}
-            color="ui.danger"
+            color="dnd.crimson"
+            bg="transparent"
+            fontFamily="'Cinzel', serif"
+            _hover={{ bg: "rgba(139, 0, 0, 0.2)" }}
           >
             Delete {type}
           </MenuItem>
