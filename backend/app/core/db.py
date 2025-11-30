@@ -4,6 +4,8 @@ from app import crud
 from app.core.config import settings
 from app.models import User, UserCreate
 
+from app.core.vector_db import init_vector_db
+
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
 
@@ -31,3 +33,8 @@ def init_db(session: Session) -> None:
             is_superuser=True,
         )
         user = crud.create_user(session=session, user_create=user_in)
+    
+    try:
+        init_vector_db()
+    except Exception:
+        pass

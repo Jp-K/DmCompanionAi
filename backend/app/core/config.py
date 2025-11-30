@@ -58,6 +58,11 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = ""
     OPENAI_API_KEY: str | None = None
 
+    VECTOR_DB_URL: str | None = "http://qdrant:6333"
+    VECTOR_DB_COLLECTION: str = "embeddings"
+    VECTOR_EMBEDDING_DIM: int = 1536
+    VECTOR_DISTANCE: Literal["cosine", "euclid", "dot"] = "cosine"
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
