@@ -186,6 +186,7 @@ services:
   #     - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
 volumes:
   app-db-data:
+  qdrant-data:
 
 networks:
   traefik-public:

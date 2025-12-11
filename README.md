@@ -2,6 +2,8 @@
 
 Dm Companion is a focused SaaS platform built for tabletop RPG Game Masters (GMs) and worldbuilders. It provides a Notion-like interface for organizing campaigns, character sheets, session notes, and homebrew content — combined with a rules-aware AI chat assistant designed to reduce hallucinations when referencing RPG rules (notably D&D 2024 materials).
 
+![Dm Companion initial page](img/login-page.png)
+
 ## Purpose
 
 The platform's main goal is to help GMs save time and reduce mistakes by combining familiar organizational tools with an AI that has been specifically equipped with official and community-verified RPG rule references. This reduces dangerous or confusing AI hallucinations when the model answers questions about game mechanics or rule interactions.
@@ -9,7 +11,13 @@ The platform's main goal is to help GMs save time and reduce mistakes by combini
 ## Key Features
 
 - **AI Rules Chat:** A dedicated AI chat assistant trained/augmented with D&D 2024 references and curated rule sources. Designed to prioritize accuracy and traceability of rule citations.
+
+![Chat using official rules](img/chat-page.jpeg)
+
 - **Notion-like Workspace:** Create pages, boards, and nested documents to organize campaigns, adventure outlines, session logs, and more.
+
+![Notion-like page for campaign notes](img/scrolls-page.jpeg)
+
 - **Tools for GMs:** Initiative trackers, encounter builders, loot generators, and other utilities that integrate with your campaign data.
 - **Search & Cross-Reference:** Fast search across campaigns, NPCs, rules, spells, and homebrew with linked references.
 

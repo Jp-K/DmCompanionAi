@@ -60,7 +60,7 @@ class Settings(BaseSettings):
 
     VECTOR_DB_URL: str | None = "http://qdrant:6333"
     VECTOR_DB_COLLECTION: str = "embeddings"
-    VECTOR_EMBEDDING_DIM: int = 1536
+    VECTOR_EMBEDDING_DIM: int = 384  # all-MiniLM-L6-v2 dimension
     VECTOR_DISTANCE: Literal["cosine", "euclid", "dot"] = "cosine"
 
     @computed_field  # type: ignore[prop-decorator]
