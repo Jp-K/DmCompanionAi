@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """
-Script to vectorize D&D data (spells and rules) and store in Qdrant.
+Script to vectorize D&D data (spells, rules, items, actions, backgrounds, deities, races, feats) and store in Qdrant.
 
 Usage:
-    cd backend && python -m app.core.vectorize_data [spells|rules|all] [--clear]
+    cd backend && python -m app.core.vectorize_data [type] [--clear]
     
     Or from project root:
     cd backend && python -m app.core.vectorize_data all
 
+Types:
+    spells, rules, items, actions, backgrounds, deities, races, feats, all
+
 Examples:
-    python -m app.core.vectorize_data all           # Vectorize all data
-    python -m app.core.vectorize_data spells        # Vectorize only spells
-    python -m app.core.vectorize_data rules --clear # Clear and re-vectorize rules
-    python -m app.core.vectorize_data all --test    # Vectorize and test search
+    python -m app.core.vectorize_data all             # Vectorize all data
+    python -m app.core.vectorize_data spells          # Vectorize only spells
+    python -m app.core.vectorize_data items --clear   # Clear and re-vectorize items
+    python -m app.core.vectorize_data feats --clear   # Clear and re-vectorize feats
+    python -m app.core.vectorize_data all --test      # Vectorize and test search
 """
 import sys
 import os
@@ -32,6 +36,8 @@ logging.basicConfig(
 
 from app.core.utils import vectorize_and_store_data, get_collection_stats, search_vector_db
 
+VALID_TYPES = ("spells", "rules", "items", "actions", "backgrounds", "deities", "races", "feats", "all")
+
 
 def main():
     # Parse arguments
@@ -40,7 +46,7 @@ def main():
     test_search = False
     
     for arg in sys.argv[1:]:
-        if arg in ("spells", "rules", "all"):
+        if arg in VALID_TYPES:
             data_type = arg
         elif arg == "--clear":
             clear = True
@@ -66,6 +72,12 @@ def main():
         print("=" * 50)
         print(f"Spells processed: {results['spells']}")
         print(f"Rules processed: {results['rules']}")
+        print(f"Items processed: {results['items']}")
+        print(f"Actions processed: {results['actions']}")
+        print(f"Backgrounds processed: {results['backgrounds']}")
+        print(f"Deities processed: {results['deities']}")
+        print(f"Races processed: {results['races']}")
+        print(f"Feats processed: {results['feats']}")
         print(f"Errors: {len(results['errors'])}")
         
         if results["errors"]:
@@ -92,6 +104,12 @@ def main():
         test_queries = [
             ("fireball", "spell"),
             ("attack roll", "rule"),
+            ("longsword", "item"),
+            ("dash", "action"),
+            ("acolyte", "background"),
+            ("Tyr", "deity"),
+            ("elf", "race"),
+            ("great weapon master", "feat"),
             ("healing", None),
         ]
         
