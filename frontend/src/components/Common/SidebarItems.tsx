@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { FiHome, FiSettings, FiUsers, FiMessageCircle, FiInbox } from "react-icons/fi"
-import { GiCrossedSwords, GiSpellBook, GiScrollUnfurled, GiCog, GiCrown } from "react-icons/gi"
+import { GiCrossedSwords, GiSpellBook, GiScrollUnfurled, GiCog, GiCrown, GiBookmarklet } from "react-icons/gi"
 
 import type { UserPublic } from "../../client"
 
@@ -13,6 +13,7 @@ const items = [
   { icon: GiCrossedSwords, title: "Dashboard", path: "/dashboard" },
   { icon: GiSpellBook, title: "Chat", path: "/chat" },
   { icon: GiScrollUnfurled, title: "History", path: "/chatList" },
+  { icon: GiBookmarklet, title: "Knowledge", path: "/knowledge" },
   { icon: GiScrollUnfurled, title: "Scrolls", path: "/scrolls" },
   { icon: GiCog, title: "User Settings", path: "/settings" },
 ]

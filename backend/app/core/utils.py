@@ -1277,6 +1277,139 @@ def get_collection_stats() -> dict:
         return {"error": str(e)}
 
 
+def list_items_by_category(
+    category: Literal["spell", "rule", "item", "action", "background", "deity", "race", "feat"] | None = None,
+    limit: int = 20,
+    offset: int = 0,
+) -> dict:
+    """
+    List items from the vector database by category with pagination.
+    
+    Args:
+        category: Optional category filter
+        limit: Maximum number of results to return (default 20, max 100)
+        offset: Number of items to skip for pagination
+        
+    Returns:
+        Dictionary with items and pagination info
+    """
+    qdrant_client = get_qdrant_client()
+    
+    # Enforce max limit
+    limit = min(limit, 100)
+    
+    # Build filter if category is specified
+    query_filter = None
+    if category:
+        query_filter = models.Filter(
+            must=[models.FieldCondition(key="category", match=models.MatchValue(value=category))]
+        )
+    
+    try:
+        # Get total count
+        if query_filter:
+            total = qdrant_client.count(
+                collection_name=settings.VECTOR_DB_COLLECTION,
+                count_filter=query_filter,
+            ).count
+        else:
+            collection_info = qdrant_client.get_collection(settings.VECTOR_DB_COLLECTION)
+            total = collection_info.points_count
+        
+        # Scroll through points with pagination
+        points, next_offset = qdrant_client.scroll(
+            collection_name=settings.VECTOR_DB_COLLECTION,
+            scroll_filter=query_filter,
+            limit=limit,
+            offset=offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        
+        items = [
+            {
+                "id": str(point.id),
+                "category": point.payload.get("category"),
+                "title": point.payload.get("title"),
+                "description": point.payload.get("description"),
+                "source": point.payload.get("source"),
+                "page": point.payload.get("page"),
+            }
+            for point in points
+        ]
+        
+        return {
+            "items": items,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + len(items) < total,
+        }
+    except Exception as e:
+        logger.error("Failed to list items: %s", e)
+        return {"error": str(e), "items": [], "total": 0, "limit": limit, "offset": offset, "has_more": False}
+
+
+def scroll_all_items(
+    category: Literal["spell", "rule", "item", "action", "background", "deity", "race", "feat"] | None = None,
+    limit: int = 20,
+    offset_id: str | None = None,
+) -> dict:
+    """
+    Scroll through items using Qdrant's native offset (more efficient for large datasets).
+    
+    Args:
+        category: Optional category filter
+        limit: Maximum number of results to return
+        offset_id: The ID to start from (for cursor-based pagination)
+        
+    Returns:
+        Dictionary with items and next offset
+    """
+    qdrant_client = get_qdrant_client()
+    
+    # Enforce max limit
+    limit = min(limit, 100)
+    
+    # Build filter if category is specified
+    query_filter = None
+    if category:
+        query_filter = models.Filter(
+            must=[models.FieldCondition(key="category", match=models.MatchValue(value=category))]
+        )
+    
+    try:
+        # Use scroll for efficient pagination
+        points, next_offset = qdrant_client.scroll(
+            collection_name=settings.VECTOR_DB_COLLECTION,
+            scroll_filter=query_filter,
+            limit=limit,
+            offset=offset_id,
+            with_payload=True,
+            with_vectors=False,
+        )
+        
+        items = [
+            {
+                "id": str(point.id),
+                "category": point.payload.get("category"),
+                "title": point.payload.get("title"),
+                "description": point.payload.get("description"),
+                "source": point.payload.get("source"),
+                "page": point.payload.get("page"),
+            }
+            for point in points
+        ]
+        
+        return {
+            "items": items,
+            "next_offset": str(next_offset) if next_offset else None,
+        }
+    except Exception as e:
+        logger.error("Failed to scroll items: %s", e)
+        return {"error": str(e), "items": [], "next_offset": None}
+
+
 # CLI entry point for running from command line
 if __name__ == "__main__":
     import sys

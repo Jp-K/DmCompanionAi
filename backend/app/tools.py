@@ -1,74 +1,18 @@
 """
-Tools for LangChain agent to search and retrieve RPG rules information.
+Tools for LangChain agent to search and retrieve D&D information from Qdrant vector database.
+
+Uses SentenceTransformer for local embeddings (no external API required).
 """
-import json
-import os
-from typing import List, Optional
+from typing import List, Literal
 
 from langchain.tools import BaseTool
-from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
-from langchain.docstore.document import Document
 from pydantic import Field
 
-from app.core.config import settings
-
-
-class VectorStoreManager:
-    """Manages vector store creation and retrieval for RPG rules."""
-    
-    def __init__(self):
-        self.embeddings = OpenAIEmbeddings(
-            openai_api_key=settings.OPENAI_API_KEY
-        )
-        self._vector_store = None
-        self._rules_content = None
-    
-    def load_rules(self, json_path: str = 'app/data_source/rules-minimal.json') -> List[Document]:
-        """Load rules from JSON file and convert to LangChain documents."""
-        with open(json_path, 'r', encoding='utf-8') as file:
-            json_data = json.load(file)
-        
-        documents = []
-        for item in json_data.get("Rules Definitions", {}).get("content", []):
-            title = item.get("title", "")
-            description = item.get("description", "")
-            
-            doc = Document(
-                page_content=f"Title: {title}\n\nDescription: {description}",
-                metadata={"title": title, "source": "rules"}
-            )
-            documents.append(doc)
-        
-        self._rules_content = documents
-        return documents
-    
-    def get_or_create_vector_store(self) -> FAISS:
-        """Get existing vector store or create a new one."""
-        if self._vector_store is None:
-            if self._rules_content is None:
-                self.load_rules()
-            
-            self._vector_store = FAISS.from_documents(
-                self._rules_content,
-                self.embeddings
-            )
-        
-        return self._vector_store
-    
-    def similarity_search(self, query: str, k: int = 3) -> List[Document]:
-        """Perform similarity search on the vector store."""
-        vector_store = self.get_or_create_vector_store()
-        results = vector_store.similarity_search(query, k=k)
-        return results
-
-
-# Global instance
-vector_store_manager = VectorStoreManager()
+from app.core.utils import search_vector_db, get_collection_stats
 
 
 class RPGRulesSearchTool(BaseTool):
-    """Tool for searching RPG rules in the vector database."""
+    """Tool for searching RPG rules in the Qdrant vector database."""
     
     name: str = "rpg_rules_search"
     description: str = """
@@ -80,23 +24,30 @@ class RPGRulesSearchTool(BaseTool):
     - "Como funciona o sistema de combate?"
     - "Regras sobre quebrar objetos"
     - "Como calcular dano de ataque desarmado?"
+    - "Condições de exaustão"
     """
-    
-    vector_manager: VectorStoreManager = Field(default_factory=lambda: vector_store_manager)
     
     def _run(self, query: str) -> str:
         """Execute the search and return formatted results."""
         try:
-            results = self.vector_manager.similarity_search(query, k=3)
+            results = search_vector_db(query, category="rule", limit=3)
             
             if not results:
                 return "Não foram encontradas regras relevantes para esta consulta."
             
             formatted_results = []
-            for i, doc in enumerate(results, 1):
-                title = doc.metadata.get("title", "Sem título")
-                content = doc.page_content
-                formatted_results.append(f"### Resultado {i}: {title}\n\n{content}\n")
+            for i, result in enumerate(results, 1):
+                title = result.get("title", "Sem título")
+                source = result.get("source", "Unknown")
+                page = result.get("page", "N/A")
+                description = result.get("description", "")[:500]
+                score = result.get("score", 0)
+                
+                formatted_results.append(
+                    f"### Resultado {i}: {title} (Score: {score:.2f})\n"
+                    f"**Fonte:** {source} (Página {page})\n\n"
+                    f"{description}...\n"
+                )
             
             return "\n".join(formatted_results)
         
@@ -109,7 +60,7 @@ class RPGRulesSearchTool(BaseTool):
 
 
 class SpellsSearchTool(BaseTool):
-    """Tool for searching spells information."""
+    """Tool for searching spells in the Qdrant vector database."""
     
     name: str = "spells_search"
     description: str = """
@@ -119,48 +70,30 @@ class SpellsSearchTool(BaseTool):
     Examples of good inputs:
     - "Fireball"
     - "Magia de cura"
-    - "Feitiços de nível 3 de dano"
+    - "Feitiços de invocação"
+    - "Magias que causam dano de fogo"
     """
     
     def _run(self, query: str) -> str:
         """Execute the search for spells."""
         try:
-            json_path = 'app/data_source/spells-minimal.json'
+            results = search_vector_db(query, category="spell", limit=3)
             
-            if not os.path.exists(json_path):
-                return "Base de dados de magias não disponível no momento."
-            
-            with open(json_path, 'r', encoding='utf-8') as file:
-                spells_data = json.load(file).get("spells", [])
-            
-            # Simple search in spell names and descriptions
-            query_lower = query.lower()
-            found_spells = []
-            
-            for spell in spells_data:
-                name = spell.get("name", "").lower()
-                desc = spell.get("desc", "").lower()
-                
-                if query_lower in name or query_lower in desc:
-                    found_spells.append(spell)
-                
-                if len(found_spells) >= 3:
-                    break
-            
-            if not found_spells:
+            if not results:
                 return f"Não foram encontradas magias relacionadas a '{query}'."
             
             formatted_results = []
-            for i, spell in enumerate(found_spells, 1):
-                name = spell.get("name", "Sem nome")
-                level = spell.get("level", "N/A")
-                school = spell.get("school", "N/A")
-                desc = spell.get("desc", "Sem descrição")[:200]
+            for i, result in enumerate(results, 1):
+                title = result.get("title", "Sem nome")
+                source = result.get("source", "Unknown")
+                page = result.get("page", "N/A")
+                description = result.get("description", "")[:400]
+                score = result.get("score", 0)
                 
                 formatted_results.append(
-                    f"### Magia {i}: {name}\n"
-                    f"**Nível:** {level} | **Escola:** {school}\n"
-                    f"**Descrição:** {desc}...\n"
+                    f"### Magia {i}: {title} (Score: {score:.2f})\n"
+                    f"**Fonte:** {source} (Página {page})\n\n"
+                    f"{description}...\n"
                 )
             
             return "\n".join(formatted_results)
@@ -173,9 +106,402 @@ class SpellsSearchTool(BaseTool):
         return self._run(query)
 
 
+class ItemsSearchTool(BaseTool):
+    """Tool for searching items in the Qdrant vector database."""
+    
+    name: str = "items_search"
+    description: str = """
+    Use this tool to search for information about items, equipment, weapons, armor, and magic items.
+    Input should be an item name or description of the item you want to find.
+    
+    Examples of good inputs:
+    - "Longsword"
+    - "Itens mágicos de cura"
+    - "Armadura de placas"
+    - "Anel de invisibilidade"
+    """
+    
+    def _run(self, query: str) -> str:
+        """Execute the search for items."""
+        try:
+            results = search_vector_db(query, category="item", limit=3)
+            
+            if not results:
+                return f"Não foram encontrados itens relacionados a '{query}'."
+            
+            formatted_results = []
+            for i, result in enumerate(results, 1):
+                title = result.get("title", "Sem nome")
+                source = result.get("source", "Unknown")
+                page = result.get("page", "N/A")
+                description = result.get("description", "")[:400]
+                score = result.get("score", 0)
+                
+                formatted_results.append(
+                    f"### Item {i}: {title} (Score: {score:.2f})\n"
+                    f"**Fonte:** {source} (Página {page})\n\n"
+                    f"{description}...\n"
+                )
+            
+            return "\n".join(formatted_results)
+        
+        except Exception as e:
+            return f"Erro ao buscar itens: {str(e)}"
+    
+    async def _arun(self, query: str) -> str:
+        """Async version of the tool."""
+        return self._run(query)
+
+
+class ActionsSearchTool(BaseTool):
+    """Tool for searching actions in the Qdrant vector database."""
+    
+    name: str = "actions_search"
+    description: str = """
+    Use this tool to search for information about combat actions and special actions.
+    Input should be an action name or description of what you want to do.
+    
+    Examples of good inputs:
+    - "Dash"
+    - "Ação de ataque"
+    - "Desengajar"
+    - "Ajudar aliado"
+    """
+    
+    def _run(self, query: str) -> str:
+        """Execute the search for actions."""
+        try:
+            results = search_vector_db(query, category="action", limit=3)
+            
+            if not results:
+                return f"Não foram encontradas ações relacionadas a '{query}'."
+            
+            formatted_results = []
+            for i, result in enumerate(results, 1):
+                title = result.get("title", "Sem nome")
+                source = result.get("source", "Unknown")
+                page = result.get("page", "N/A")
+                description = result.get("description", "")[:400]
+                score = result.get("score", 0)
+                
+                formatted_results.append(
+                    f"### Ação {i}: {title} (Score: {score:.2f})\n"
+                    f"**Fonte:** {source} (Página {page})\n\n"
+                    f"{description}...\n"
+                )
+            
+            return "\n".join(formatted_results)
+        
+        except Exception as e:
+            return f"Erro ao buscar ações: {str(e)}"
+    
+    async def _arun(self, query: str) -> str:
+        """Async version of the tool."""
+        return self._run(query)
+
+
+class BackgroundsSearchTool(BaseTool):
+    """Tool for searching backgrounds in the Qdrant vector database."""
+    
+    name: str = "backgrounds_search"
+    description: str = """
+    Use this tool to search for information about character backgrounds.
+    Input should be a background name or description of the background you want to find.
+    
+    Examples of good inputs:
+    - "Acolyte"
+    - "Criminoso"
+    - "Nobre"
+    - "Soldado"
+    """
+    
+    def _run(self, query: str) -> str:
+        """Execute the search for backgrounds."""
+        try:
+            results = search_vector_db(query, category="background", limit=3)
+            
+            if not results:
+                return f"Não foram encontrados antecedentes relacionados a '{query}'."
+            
+            formatted_results = []
+            for i, result in enumerate(results, 1):
+                title = result.get("title", "Sem nome")
+                source = result.get("source", "Unknown")
+                page = result.get("page", "N/A")
+                description = result.get("description", "")[:400]
+                score = result.get("score", 0)
+                
+                formatted_results.append(
+                    f"### Antecedente {i}: {title} (Score: {score:.2f})\n"
+                    f"**Fonte:** {source} (Página {page})\n\n"
+                    f"{description}...\n"
+                )
+            
+            return "\n".join(formatted_results)
+        
+        except Exception as e:
+            return f"Erro ao buscar antecedentes: {str(e)}"
+    
+    async def _arun(self, query: str) -> str:
+        """Async version of the tool."""
+        return self._run(query)
+
+
+class DeitiesSearchTool(BaseTool):
+    """Tool for searching deities in the Qdrant vector database."""
+    
+    name: str = "deities_search"
+    description: str = """
+    Use this tool to search for information about gods and deities.
+    Input should be a deity name, pantheon, or domain you want to find.
+    
+    Examples of good inputs:
+    - "Tyr"
+    - "Deuses da guerra"
+    - "Panteão élfico"
+    - "Divindades do domínio da vida"
+    """
+    
+    def _run(self, query: str) -> str:
+        """Execute the search for deities."""
+        try:
+            results = search_vector_db(query, category="deity", limit=3)
+            
+            if not results:
+                return f"Não foram encontradas divindades relacionadas a '{query}'."
+            
+            formatted_results = []
+            for i, result in enumerate(results, 1):
+                title = result.get("title", "Sem nome")
+                source = result.get("source", "Unknown")
+                page = result.get("page", "N/A")
+                description = result.get("description", "")[:400]
+                score = result.get("score", 0)
+                
+                formatted_results.append(
+                    f"### Divindade {i}: {title} (Score: {score:.2f})\n"
+                    f"**Fonte:** {source} (Página {page})\n\n"
+                    f"{description}...\n"
+                )
+            
+            return "\n".join(formatted_results)
+        
+        except Exception as e:
+            return f"Erro ao buscar divindades: {str(e)}"
+    
+    async def _arun(self, query: str) -> str:
+        """Async version of the tool."""
+        return self._run(query)
+
+
+class RacesSearchTool(BaseTool):
+    """Tool for searching races in the Qdrant vector database."""
+    
+    name: str = "races_search"
+    description: str = """
+    Use this tool to search for information about playable races and species.
+    Input should be a race name or characteristic you want to find.
+    
+    Examples of good inputs:
+    - "Elf"
+    - "Anão"
+    - "Raças com visão no escuro"
+    - "Tiefling"
+    """
+    
+    def _run(self, query: str) -> str:
+        """Execute the search for races."""
+        try:
+            results = search_vector_db(query, category="race", limit=3)
+            
+            if not results:
+                return f"Não foram encontradas raças relacionadas a '{query}'."
+            
+            formatted_results = []
+            for i, result in enumerate(results, 1):
+                title = result.get("title", "Sem nome")
+                source = result.get("source", "Unknown")
+                page = result.get("page", "N/A")
+                description = result.get("description", "")[:400]
+                score = result.get("score", 0)
+                
+                formatted_results.append(
+                    f"### Raça {i}: {title} (Score: {score:.2f})\n"
+                    f"**Fonte:** {source} (Página {page})\n\n"
+                    f"{description}...\n"
+                )
+            
+            return "\n".join(formatted_results)
+        
+        except Exception as e:
+            return f"Erro ao buscar raças: {str(e)}"
+    
+    async def _arun(self, query: str) -> str:
+        """Async version of the tool."""
+        return self._run(query)
+
+
+class FeatsSearchTool(BaseTool):
+    """Tool for searching feats in the Qdrant vector database."""
+    
+    name: str = "feats_search"
+    description: str = """
+    Use this tool to search for information about feats and special abilities.
+    Input should be a feat name or description of the ability you want to find.
+    
+    Examples of good inputs:
+    - "Great Weapon Master"
+    - "Talentos de combate"
+    - "Lucky"
+    - "Talentos para magos"
+    """
+    
+    def _run(self, query: str) -> str:
+        """Execute the search for feats."""
+        try:
+            results = search_vector_db(query, category="feat", limit=3)
+            
+            if not results:
+                return f"Não foram encontrados talentos relacionados a '{query}'."
+            
+            formatted_results = []
+            for i, result in enumerate(results, 1):
+                title = result.get("title", "Sem nome")
+                source = result.get("source", "Unknown")
+                page = result.get("page", "N/A")
+                description = result.get("description", "")[:400]
+                score = result.get("score", 0)
+                
+                formatted_results.append(
+                    f"### Talento {i}: {title} (Score: {score:.2f})\n"
+                    f"**Fonte:** {source} (Página {page})\n\n"
+                    f"{description}...\n"
+                )
+            
+            return "\n".join(formatted_results)
+        
+        except Exception as e:
+            return f"Erro ao buscar talentos: {str(e)}"
+    
+    async def _arun(self, query: str) -> str:
+        """Async version of the tool."""
+        return self._run(query)
+
+
+class GeneralSearchTool(BaseTool):
+    """Tool for searching all categories in the Qdrant vector database."""
+    
+    name: str = "general_search"
+    description: str = """
+    Use this tool to search across ALL categories (spells, rules, items, actions, backgrounds, deities, races, feats).
+    This is useful when you're not sure which category the information belongs to.
+    Input should be any search query about D&D content.
+    
+    Examples of good inputs:
+    - "Como funciona resistência a dano?"
+    - "Informações sobre dragões"
+    - "Healing word"
+    - "Combate corpo a corpo"
+    """
+    
+    def _run(self, query: str) -> str:
+        """Execute the search across all categories."""
+        try:
+            # Search without category filter to get results from all categories
+            results = search_vector_db(query, category=None, limit=5)
+            
+            if not results:
+                return f"Não foram encontrados resultados para '{query}'."
+            
+            formatted_results = []
+            for i, result in enumerate(results, 1):
+                title = result.get("title", "Sem título")
+                category = result.get("category", "unknown")
+                source = result.get("source", "Unknown")
+                page = result.get("page", "N/A")
+                description = result.get("description", "")[:300]
+                score = result.get("score", 0)
+                
+                # Map category to Portuguese
+                category_map = {
+                    "spell": "Magia",
+                    "rule": "Regra",
+                    "item": "Item",
+                    "action": "Ação",
+                    "background": "Antecedente",
+                    "deity": "Divindade",
+                    "race": "Raça",
+                    "feat": "Talento",
+                }
+                category_pt = category_map.get(category, category)
+                
+                formatted_results.append(
+                    f"### {i}. [{category_pt}] {title} (Score: {score:.2f})\n"
+                    f"**Fonte:** {source} (Página {page})\n\n"
+                    f"{description}...\n"
+                )
+            
+            return "\n".join(formatted_results)
+        
+        except Exception as e:
+            return f"Erro ao buscar: {str(e)}"
+    
+    async def _arun(self, query: str) -> str:
+        """Async version of the tool."""
+        return self._run(query)
+
+
+class DatabaseStatsTool(BaseTool):
+    """Tool for getting statistics about the vector database."""
+    
+    name: str = "database_stats"
+    description: str = """
+    Use this tool to get statistics about the D&D knowledge base.
+    It returns the count of items in each category (spells, rules, items, etc.).
+    No input is required.
+    """
+    
+    def _run(self, query: str = "") -> str:
+        """Get database statistics."""
+        try:
+            stats = get_collection_stats()
+            
+            if "error" in stats:
+                return f"Erro ao obter estatísticas: {stats['error']}"
+            
+            return (
+                f"### Estatísticas da Base de Conhecimento D&D\n\n"
+                f"- **Total de documentos:** {stats.get('total_points', 0)}\n"
+                f"- **Magias:** {stats.get('spells', 0)}\n"
+                f"- **Regras:** {stats.get('rules', 0)}\n"
+                f"- **Itens:** {stats.get('items', 0)}\n"
+                f"- **Ações:** {stats.get('actions', 0)}\n"
+                f"- **Antecedentes:** {stats.get('backgrounds', 0)}\n"
+                f"- **Divindades:** {stats.get('deities', 0)}\n"
+                f"- **Raças:** {stats.get('races', 0)}\n"
+                f"- **Talentos:** {stats.get('feats', 0)}\n"
+                f"- **Status:** {stats.get('status', 'unknown')}\n"
+            )
+        
+        except Exception as e:
+            return f"Erro ao obter estatísticas: {str(e)}"
+    
+    async def _arun(self, query: str = "") -> str:
+        """Async version of the tool."""
+        return self._run(query)
+
+
 def get_available_tools() -> List[BaseTool]:
     """Return list of all available tools for the agent."""
     return [
-        RPGRulesSearchTool(),
+        GeneralSearchTool(),
         SpellsSearchTool(),
+        RPGRulesSearchTool(),
+        ItemsSearchTool(),
+        ActionsSearchTool(),
+        BackgroundsSearchTool(),
+        DeitiesSearchTool(),
+        RacesSearchTool(),
+        FeatsSearchTool(),
+        DatabaseStatsTool(),
     ]

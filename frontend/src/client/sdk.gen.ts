@@ -562,3 +562,166 @@ export class UtilsService {
     })
   }
 }
+
+// Knowledge types
+export interface KnowledgeItem {
+  id?: string | null
+  category?: string | null
+  title?: string | null
+  description?: string | null
+  source?: string | null
+  page?: string | number | null
+  score?: number | null
+  document?: string | null
+}
+
+export interface PaginatedResponse {
+  items: KnowledgeItem[]
+  total: number
+  limit: number
+  offset: number
+  has_more: boolean
+}
+
+export interface ScrollResponse {
+  items: KnowledgeItem[]
+  next_offset?: string | null
+}
+
+export interface SearchResponse {
+  items: KnowledgeItem[]
+  query: string
+  category?: string | null
+}
+
+export interface StatsResponse {
+  total_points?: number | null
+  spells?: number | null
+  rules?: number | null
+  items?: number | null
+  actions?: number | null
+  backgrounds?: number | null
+  deities?: number | null
+  races?: number | null
+  feats?: number | null
+  status?: string | null
+  vectors_config?: string | null
+  error?: string | null
+}
+
+export interface CategoryInfo {
+  value: string
+  label: string
+  label_en: string
+}
+
+export type CategoryType = "spell" | "rule" | "item" | "action" | "background" | "deity" | "race" | "feat"
+
+export class KnowledgeService {
+  /**
+   * Get Stats
+   * Get statistics about the knowledge base.
+   * @returns StatsResponse Successful Response
+   * @throws ApiError
+   */
+  public static getStats(): CancelablePromise<StatsResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/knowledge/stats",
+    })
+  }
+
+  /**
+   * List Knowledge Items
+   * List knowledge items with pagination.
+   * @param data The data for the request.
+   * @param data.category Filter by category
+   * @param data.limit Number of items to return (max 100)
+   * @param data.offset Number of items to skip
+   * @returns PaginatedResponse Successful Response
+   * @throws ApiError
+   */
+  public static listItems(
+    data: { category?: CategoryType | null; limit?: number; offset?: number } = {},
+  ): CancelablePromise<PaginatedResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/knowledge/list",
+      query: {
+        category: data.category,
+        limit: data.limit,
+        offset: data.offset,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Scroll Knowledge Items
+   * Scroll through knowledge items using cursor-based pagination.
+   * @param data The data for the request.
+   * @param data.category Filter by category
+   * @param data.limit Number of items to return
+   * @param data.offsetId Cursor for pagination
+   * @returns ScrollResponse Successful Response
+   * @throws ApiError
+   */
+  public static scrollItems(
+    data: { category?: CategoryType | null; limit?: number; offsetId?: string | null } = {},
+  ): CancelablePromise<ScrollResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/knowledge/scroll",
+      query: {
+        category: data.category,
+        limit: data.limit,
+        offset_id: data.offsetId,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Search Knowledge
+   * Semantic search across the knowledge base.
+   * @param data The data for the request.
+   * @param data.q Search query
+   * @param data.category Filter by category
+   * @param data.limit Number of results to return (max 20)
+   * @returns SearchResponse Successful Response
+   * @throws ApiError
+   */
+  public static search(
+    data: { q: string; category?: CategoryType | null; limit?: number },
+  ): CancelablePromise<SearchResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/knowledge/search",
+      query: {
+        q: data.q,
+        category: data.category,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * List Categories
+   * List all available categories.
+   * @returns Categories list
+   * @throws ApiError
+   */
+  public static listCategories(): CancelablePromise<{ categories: CategoryInfo[] }> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/knowledge/categories",
+    })
+  }
+}
