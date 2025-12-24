@@ -27,6 +27,25 @@ class KnowledgeItem(BaseModel):
     page: str | int | None = None
     score: float | None = None
     document: str | None = None
+    # Category-specific fields
+    level: int | None = None  # For spells
+    school: str | None = None  # For spells
+    rarity: str | None = None  # For items
+    type: str | None = None  # General type field
+    section: str | None = None  # For rules
+    # Additional spell fields
+    casting_time: str | None = None
+    range: str | None = None
+    duration: str | None = None
+    components: str | None = None
+    material: str | None = None
+    concentration: bool | None = None
+    ritual: bool | None = None
+    higher_level: str | None = None
+    # Additional feat fields
+    feat_category: str | None = None
+    prerequisites: str | None = None
+    ability_increase: str | None = None
 
 
 class PaginatedResponse(BaseModel):

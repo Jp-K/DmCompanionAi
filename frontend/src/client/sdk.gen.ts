@@ -573,6 +573,25 @@ export interface KnowledgeItem {
   page?: string | number | null
   score?: number | null
   document?: string | null
+  // Category-specific fields
+  level?: number | null  // For spells
+  school?: string | null  // For spells
+  rarity?: string | null  // For items
+  type?: string | null  // General type field
+  section?: string | null  // For rules
+  // Additional spell fields
+  casting_time?: string | null
+  range?: string | null
+  duration?: string | null
+  components?: string | null
+  material?: string | null
+  concentration?: boolean | null
+  ritual?: boolean | null
+  higher_level?: string | null
+  // Additional feat fields
+  feat_category?: string | null
+  prerequisites?: string | null
+  ability_increase?: string | null
 }
 
 export interface PaginatedResponse {
