@@ -392,7 +392,7 @@ def create_item_document(item: dict) -> str:
     return "\n".join(parts)
 
 
-def _extract_entries_text(entries: list | str | None) -> str:
+def _extract_entries_text(entries: list | str | None, include_names: bool = True) -> str:
     """Extract text content from entries field (common in 5etools JSON)."""
     if not entries:
         return ""
@@ -404,11 +404,14 @@ def _extract_entries_text(entries: list | str | None) -> str:
             if isinstance(entry, str):
                 texts.append(entry)
             elif isinstance(entry, dict):
-                # Handle nested entries
+                # Handle named sub-entries (like feat benefits)
+                entry_parts = []
+                if include_names and "name" in entry:
+                    entry_parts.append(f"{entry['name']}.")
                 if "entries" in entry:
-                    texts.append(_extract_entries_text(entry["entries"]))
-                if "name" in entry:
-                    texts.append(entry["name"])
+                    entry_parts.append(_extract_entries_text(entry["entries"], include_names=False))
+                if entry_parts:
+                    texts.append(" ".join(entry_parts))
         return " ".join(texts)
     return ""
 
@@ -629,11 +632,98 @@ def vectorize_and_store_data(
                 spell_level = spell.get("level", 0)
                 spell_school = spell.get("school", "")
                 
+                # Map school abbreviations to full names
+                school_map = {
+                    "A": "Abjuration", "C": "Conjuration", "D": "Divination",
+                    "E": "Enchantment", "V": "Evocation", "I": "Illusion",
+                    "N": "Necromancy", "T": "Transmutation"
+                }
+                school_name = school_map.get(spell_school, spell_school)
+                
                 # Get description based on format
                 if "entries" in spell:
                     spell_description = _extract_entries_text(spell.get("entries") or [])
                 else:
                     spell_description = spell.get("description", "")
+                
+                # Extract casting time
+                time_info = spell.get("time", [])
+                if time_info and isinstance(time_info, list) and len(time_info) > 0:
+                    time = time_info[0]
+                    casting_time = f"{time.get('number', 1)} {time.get('unit', 'action')}"
+                else:
+                    casting_time = "1 action"
+                
+                # Extract range
+                range_dist = spell.get("range.distance.type", "")
+                range_amount = spell.get("range.distance.amount", "")
+                if range_dist == "self":
+                    spell_range = "Self"
+                elif range_dist == "touch":
+                    spell_range = "Touch"
+                elif range_amount:
+                    spell_range = f"{int(range_amount)} feet"
+                else:
+                    spell_range = range_dist or "Unknown"
+                
+                # Extract duration
+                duration_info = spell.get("duration", [])
+                concentration = False
+                if duration_info and isinstance(duration_info, list) and len(duration_info) > 0:
+                    dur = duration_info[0]
+                    concentration = dur.get("concentration", False)
+                    if dur.get("type") == "instant":
+                        duration = "Instantaneous"
+                    elif dur.get("type") == "timed":
+                        dur_detail = dur.get("duration", {})
+                        amount = dur_detail.get("amount", 1)
+                        unit = dur_detail.get("type", "round")
+                        # Capitalize unit
+                        unit_display = unit.capitalize() + ("s" if amount > 1 else "")
+                        if concentration:
+                            duration = f"Concentration, up to {amount} {unit_display}"
+                        else:
+                            duration = f"{amount} {unit_display}"
+                    elif dur.get("type") == "permanent":
+                        duration = "Permanent"
+                    elif dur.get("type") == "special":
+                        duration = "Special"
+                    else:
+                        duration = str(dur.get("type", "Unknown"))
+                else:
+                    duration = "Unknown"
+                
+                # Extract components
+                components = []
+                if spell.get("components.v"):
+                    components.append("V")
+                if spell.get("components.s"):
+                    components.append("S")
+                # Check for material components in additionalInfo
+                additional_info = spell.get("additionalInfo")
+                material_component = None
+                if additional_info:
+                    if isinstance(additional_info, str):
+                        try:
+                            additional_info = json.loads(additional_info)
+                        except json.JSONDecodeError:
+                            additional_info = {}
+                    if additional_info.get("components.m") or additional_info.get("components.m.text"):
+                        components.append("M")
+                        material_component = additional_info.get("components.m.text") or additional_info.get("components.m")
+                
+                components_str = ", ".join(components) if components else ""
+                
+                # Check if ritual
+                is_ritual = False
+                if additional_info and isinstance(additional_info, dict):
+                    is_ritual = additional_info.get("meta.ritual", False)
+                
+                # Extract higher level info
+                higher_level = ""
+                if additional_info and isinstance(additional_info, dict):
+                    if additional_info.get("entriesHigherLevel"):
+                        higher_level = _extract_entries_text(additional_info["entriesHigherLevel"])
                 
                 point = models.PointStruct(
                     id=str(uuid.uuid4()),
@@ -644,10 +734,19 @@ def vectorize_and_store_data(
                         "source": spell.get("source", "Unknown"),
                         "page": spell.get("page"),
                         "level": spell_level,
-                        "school": spell_school,
+                        "school": school_name,
                         "type": spell.get("type", "Spell"),
                         "description": spell_description,
                         "document": document,
+                        # Additional spell fields
+                        "casting_time": casting_time,
+                        "range": spell_range,
+                        "duration": duration,
+                        "components": components_str,
+                        "material": material_component,
+                        "concentration": concentration,
+                        "ritual": is_ritual,
+                        "higher_level": higher_level if higher_level else None,
                     },
                 )
                 points.append(point)
@@ -1086,6 +1185,105 @@ def vectorize_and_store_data(
                 document = create_feat_document(feat)
                 embedding = encoder.encode(document).tolist()
                 
+                # Map category codes to full names
+                category_map = {
+                    "G": "General",
+                    "O": "Origin",
+                    "F": "Fighting Style",
+                    "FS": "Fighting Style",
+                    "E": "Epic Boon",
+                    "EB": "Epic Boon",
+                }
+                feat_category = feat.get("category", "")
+                feat_category_name = category_map.get(feat_category, feat_category or "General")
+                
+                # Extract prerequisites
+                prereqs = feat.get("prerequisite") or []
+                prereq_strs = []
+                level_req = None
+                ability_options = []
+                if prereqs and isinstance(prereqs, list):
+                    for prereq in prereqs:
+                        if isinstance(prereq, dict):
+                            # Collect level (only once)
+                            if "level" in prereq and level_req is None:
+                                level_req = prereq['level']
+                            # Collect ability requirements
+                            if "ability" in prereq:
+                                for ab in prereq["ability"]:
+                                    if isinstance(ab, dict):
+                                        for k, v in ab.items():
+                                            ability_names = {
+                                                "str": "Strength", "dex": "Dexterity", "con": "Constitution",
+                                                "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma"
+                                            }
+                                            ability_options.append(f"{ability_names.get(k.lower(), k.upper())} {v}+")
+                            if "spellcasting" in prereq:
+                                prereq_strs.append("Spellcasting or Pact Magic feature")
+                            if "feat" in prereq:
+                                feat_prereqs = prereq["feat"]
+                                if isinstance(feat_prereqs, list):
+                                    for fp in feat_prereqs:
+                                        if isinstance(fp, str):
+                                            # Format: "feat name|source|display name" - take first part
+                                            feat_name = fp.split("|")[0].replace("_", " ").title()
+                                            prereq_strs.append(feat_name)
+                            if "race" in prereq:
+                                race_prereq = prereq["race"]
+                                if isinstance(race_prereq, list):
+                                    race_names = []
+                                    for r in race_prereq:
+                                        if isinstance(r, dict):
+                                            race_name = r.get("name", "").title()
+                                            subrace = r.get("subrace", "")
+                                            if subrace:
+                                                race_names.append(f"{subrace.title()} {race_name}")
+                                            else:
+                                                race_names.append(race_name)
+                                    if race_names:
+                                        prereq_strs.append(" or ".join(race_names))
+                                elif isinstance(race_prereq, str):
+                                    prereq_strs.append(race_prereq.title())
+                            if "proficiency" in prereq:
+                                for prof in prereq.get("proficiency", []):
+                                    if isinstance(prof, dict):
+                                        prereq_strs.extend([f"{k} proficiency" for k in prof.keys()])
+                
+                # Build final prerequisites string
+                final_prereqs = []
+                if level_req:
+                    final_prereqs.append(f"Level {level_req}+")
+                if ability_options:
+                    final_prereqs.append(" or ".join(ability_options))
+                final_prereqs.extend(prereq_strs)
+                prerequisites = ", ".join(final_prereqs) if final_prereqs else None
+                
+                # Extract ability score increases
+                ability_increases = []
+                abilities = feat.get("ability") or []
+                if abilities and isinstance(abilities, list):
+                    for ab in abilities:
+                        if isinstance(ab, dict):
+                            if "choose" in ab:
+                                choose = ab["choose"]
+                                if isinstance(choose, dict) and "from" in choose:
+                                    from_list = choose["from"]
+                                    ability_names = {
+                                        "str": "Strength", "dex": "Dexterity", "con": "Constitution",
+                                        "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma"
+                                    }
+                                    names = [ability_names.get(a.lower(), a.upper()) for a in from_list]
+                                    ability_increases.append(f"{' or '.join(names)} +1")
+                            else:
+                                for k, v in ab.items():
+                                    ability_names = {
+                                        "str": "Strength", "dex": "Dexterity", "con": "Constitution",
+                                        "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma"
+                                    }
+                                    ability_increases.append(f"{ability_names.get(k.lower(), k.upper())} +{v}")
+                
+                ability_score_increase = ", ".join(ability_increases) if ability_increases else None
+                
                 point = models.PointStruct(
                     id=str(uuid.uuid4()),
                     vector=embedding,
@@ -1094,7 +1292,9 @@ def vectorize_and_store_data(
                         "title": feat.get("name", "Unknown"),
                         "source": feat.get("source", "Unknown"),
                         "page": feat.get("page"),
-                        "feat_category": feat.get("category", "General"),
+                        "feat_category": feat_category_name,
+                        "prerequisites": prerequisites,
+                        "ability_increase": ability_score_increase,
                         "description": _extract_entries_text(feat.get("entries") or []),
                         "document": document,
                     },
@@ -1178,13 +1378,32 @@ def search_vector_db(
     
     return [
         {
+            "id": str(hit.id),
             "score": hit.score,
             "category": hit.payload.get("category"),
             "title": hit.payload.get("title"),
             "description": hit.payload.get("description"),
             "source": hit.payload.get("source"),
             "page": hit.payload.get("page"),
+            "level": hit.payload.get("level"),
+            "school": hit.payload.get("school"),
+            "rarity": hit.payload.get("rarity"),
+            "type": hit.payload.get("type"),
+            "section": hit.payload.get("section"),
             "document": hit.payload.get("document"),
+            # Additional spell fields
+            "casting_time": hit.payload.get("casting_time"),
+            "range": hit.payload.get("range"),
+            "duration": hit.payload.get("duration"),
+            "components": hit.payload.get("components"),
+            "material": hit.payload.get("material"),
+            "concentration": hit.payload.get("concentration"),
+            "ritual": hit.payload.get("ritual"),
+            "higher_level": hit.payload.get("higher_level"),
+            # Additional feat fields
+            "feat_category": hit.payload.get("feat_category"),
+            "prerequisites": hit.payload.get("prerequisites"),
+            "ability_increase": hit.payload.get("ability_increase"),
         }
         for hit in results.points
     ]
@@ -1285,6 +1504,9 @@ def list_items_by_category(
     """
     List items from the vector database by category with pagination.
     
+    Uses scroll with cursor-based pagination internally, but provides
+    offset-based interface for easier frontend integration.
+    
     Args:
         category: Optional category filter
         limit: Maximum number of results to return (default 20, max 100)
@@ -1316,15 +1538,34 @@ def list_items_by_category(
             collection_info = qdrant_client.get_collection(settings.VECTOR_DB_COLLECTION)
             total = collection_info.points_count
         
-        # Scroll through points with pagination
-        points, next_offset = qdrant_client.scroll(
-            collection_name=settings.VECTOR_DB_COLLECTION,
-            scroll_filter=query_filter,
-            limit=limit,
-            offset=offset,
-            with_payload=True,
-            with_vectors=False,
-        )
+        # For offset-based pagination, we need to scroll through all items up to offset+limit
+        # This is not ideal for large offsets, but works for reasonable page sizes
+        all_items = []
+        current_offset = None
+        items_to_fetch = offset + limit
+        
+        while len(all_items) < items_to_fetch:
+            batch_size = min(100, items_to_fetch - len(all_items))
+            points, next_offset = qdrant_client.scroll(
+                collection_name=settings.VECTOR_DB_COLLECTION,
+                scroll_filter=query_filter,
+                limit=batch_size,
+                offset=current_offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            
+            if not points:
+                break
+                
+            all_items.extend(points)
+            current_offset = next_offset
+            
+            if next_offset is None:
+                break
+        
+        # Apply offset and limit to get the requested page
+        page_items = all_items[offset:offset + limit]
         
         items = [
             {
@@ -1334,8 +1575,27 @@ def list_items_by_category(
                 "description": point.payload.get("description"),
                 "source": point.payload.get("source"),
                 "page": point.payload.get("page"),
+                "level": point.payload.get("level"),
+                "school": point.payload.get("school"),
+                "rarity": point.payload.get("rarity"),
+                "type": point.payload.get("type"),
+                "section": point.payload.get("section"),
+                "document": point.payload.get("document"),
+                # Additional spell fields
+                "casting_time": point.payload.get("casting_time"),
+                "range": point.payload.get("range"),
+                "duration": point.payload.get("duration"),
+                "components": point.payload.get("components"),
+                "material": point.payload.get("material"),
+                "concentration": point.payload.get("concentration"),
+                "ritual": point.payload.get("ritual"),
+                "higher_level": point.payload.get("higher_level"),
+                # Additional feat fields
+                "feat_category": point.payload.get("feat_category"),
+                "prerequisites": point.payload.get("prerequisites"),
+                "ability_increase": point.payload.get("ability_increase"),
             }
-            for point in points
+            for point in page_items
         ]
         
         return {
@@ -1397,6 +1657,25 @@ def scroll_all_items(
                 "description": point.payload.get("description"),
                 "source": point.payload.get("source"),
                 "page": point.payload.get("page"),
+                "level": point.payload.get("level"),
+                "school": point.payload.get("school"),
+                "rarity": point.payload.get("rarity"),
+                "type": point.payload.get("type"),
+                "section": point.payload.get("section"),
+                "document": point.payload.get("document"),
+                # Additional spell fields
+                "casting_time": point.payload.get("casting_time"),
+                "range": point.payload.get("range"),
+                "duration": point.payload.get("duration"),
+                "components": point.payload.get("components"),
+                "material": point.payload.get("material"),
+                "concentration": point.payload.get("concentration"),
+                "ritual": point.payload.get("ritual"),
+                "higher_level": point.payload.get("higher_level"),
+                # Additional feat fields
+                "feat_category": point.payload.get("feat_category"),
+                "prerequisites": point.payload.get("prerequisites"),
+                "ability_increase": point.payload.get("ability_increase"),
             }
             for point in points
         ]
