@@ -86,11 +86,23 @@ const Sidebar = () => {
                   <Text ml={2}>Log out</Text>
                 </Flex>
               </Box>
-              {currentUser?.email && (
-                <Text color="dnd.parchment" noOfLines={2} fontSize="sm" p={2} opacity={0.8}>
-                  ⚔️ {currentUser.email}
-                </Text>
-              )}
+              <Box mt="auto">
+                {currentUser?.email && (
+                  <Text color="dnd.parchment" noOfLines={2} fontSize="sm" p={2} opacity={0.8}>
+                    ⚔️ {currentUser.email}
+                  </Text>
+                )}
+                <Flex justify="center" mt={4}>
+                  <a href="https://ko-fi.com/T6T81QVZLD" target="_blank" rel="noopener noreferrer">
+                    <img 
+                      height="36" 
+                      style={{ border: 0, height: '36px' }} 
+                      src="https://storage.ko-fi.com/cdn/kofi2.png?v=6" 
+                      alt="Buy Me a Coffee at ko-fi.com" 
+                    />
+                  </a>
+                </Flex>
+              </Box>
             </Flex>
           </DrawerBody>
         </DrawerContent>
@@ -130,18 +142,30 @@ const Sidebar = () => {
             </Flex>
             <SidebarItems />
           </Box>
-          {currentUser?.email && (
-            <Text
-              color="dnd.parchment"
-              noOfLines={2}
-              fontSize="sm"
-              p={2}
-              maxW="180px"
-              opacity={0.8}
-            >
-              ⚔️ {currentUser.email}
-            </Text>
-          )}
+          <Box mt="auto">
+            {currentUser?.email && (
+              <Text
+                color="dnd.parchment"
+                noOfLines={2}
+                fontSize="sm"
+                p={2}
+                maxW="180px"
+                opacity={0.8}
+              >
+                ⚔️ {currentUser.email}
+              </Text>
+            )}
+            <Flex justify="center" mt={4}>
+              <a href="https://ko-fi.com/T6T81QVZLD" target="_blank" rel="noopener noreferrer">
+                <img 
+                  height="36" 
+                  style={{ border: 0, height: '36px' }} 
+                  src="https://storage.ko-fi.com/cdn/kofi2.png?v=6" 
+                  alt="Buy Me a Coffee at ko-fi.com" 
+                />
+              </a>
+            </Flex>
+          </Box>
         </Flex>
       </Box>
     </>

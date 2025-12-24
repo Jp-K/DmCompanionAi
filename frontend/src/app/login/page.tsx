@@ -179,6 +179,17 @@ export default function LoginPage() {
               Join the Adventure
             </Link>
           </Text>
+
+          <Box mt={6}>
+            <a href="https://ko-fi.com/T6T81QVZLD" target="_blank" rel="noopener noreferrer">
+              <img 
+                height="36" 
+                style={{ border: 0, height: '36px' }} 
+                src="https://storage.ko-fi.com/cdn/kofi2.png?v=6" 
+                alt="Buy Me a Coffee at ko-fi.com" 
+              />
+            </a>
+          </Box>
         </VStack>
       </Container>
     </Box>
