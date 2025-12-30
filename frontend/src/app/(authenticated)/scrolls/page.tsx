@@ -13,6 +13,7 @@ import {
   VStack,
   Icon,
   SkeletonText,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -100,7 +101,10 @@ const tableStyles = css`
 `
 
 function Scrolls() {
-    return (
+  const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
+  const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
+
+  return (
     <Flex
       direction="column"
       h="calc(100vh - 120px)"
@@ -108,7 +112,7 @@ function Scrolls() {
       px={4}
       pb={4}
       css={tableStyles}
-      bg="dnd.ink"
+      bg={bgColor}
     >
       <Box
         flex="1"
@@ -118,7 +122,7 @@ function Scrolls() {
         border="2px solid"
         borderColor="dnd.gold"
         borderRadius="12px"
-        bg="dnd.leather"
+        bg={cardBg}
         boxShadow="inset 0 0 20px rgba(0, 0, 0, 0.5)"
       >
         <EditorScroll />
@@ -128,8 +132,11 @@ function Scrolls() {
 }
 
 export default function ChatPage() {
+  const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+
   return (
-    <Container maxW="full" bg="dnd.ink" minH="100vh" p={0}>
+    <Container maxW="full" bg={bgColor} minH="100vh" p={0}>
       <Box py={6} px={4}>
         <Heading 
           size="lg" 
@@ -142,7 +149,7 @@ export default function ChatPage() {
         >
           <Icon as={GiScrollUnfurled} /> Scrolls
         </Heading>
-        <Text color="dnd.parchment" mt={2} opacity={0.8}>
+        <Text color={textColor} mt={2} opacity={0.8}>
             Review your past adventures and conversations
         </Text>
       </Box>

@@ -1,4 +1,9 @@
-import { extendTheme } from "@chakra-ui/react"
+import { extendTheme, type ThemeConfig } from "@chakra-ui/react"
+
+const config: ThemeConfig = {
+  initialColorMode: "dark",
+  useSystemColorMode: false,
+}
 
 const disabledStyles = {
   _disabled: {
@@ -8,6 +13,7 @@ const disabledStyles = {
 }
 
 const theme = extendTheme({
+  config,
   fonts: {
     heading: "'Cinzel', serif",
     body: "'Inter', sans-serif",
@@ -34,14 +40,55 @@ const theme = extendTheme({
       leather: "#4A3728",
       leatherLight: "#5D4632",
       ink: "#1A0F0A",
+      inkLight: "#1a1a2e",
       bronze: "#CD7F32",
     },
   },
   styles: {
-    global: {
+    global: (props: { colorMode: string }) => ({
       body: {
-        bg: "dnd.leather",
-        color: "dnd.parchment",
+        bg: props.colorMode === "dark" ? "dnd.ink" : "dnd.parchment",
+        color: props.colorMode === "dark" ? "dnd.parchment" : "dnd.ink",
+      },
+    }),
+  },
+  semanticTokens: {
+    colors: {
+      "bg.main": {
+        default: "dnd.parchment",
+        _dark: "dnd.ink",
+      },
+      "bg.card": {
+        default: "white",
+        _dark: "rgba(26, 26, 46, 0.7)",
+      },
+      "bg.cardSolid": {
+        default: "dnd.parchmentDark",
+        _dark: "rgba(26, 26, 46, 0.9)",
+      },
+      "bg.subtle": {
+        default: "rgba(0, 0, 0, 0.05)",
+        _dark: "rgba(0, 0, 0, 0.2)",
+      },
+      "bg.hover": {
+        default: "rgba(201, 162, 39, 0.15)",
+        _dark: "rgba(201, 162, 39, 0.1)",
+      },
+      "border.main": {
+        default: "dnd.goldDark",
+        _dark: "rgba(201, 162, 39, 0.3)",
+      },
+      "border.accent": {
+        default: "dnd.gold",
+        _dark: "dnd.gold",
+      },
+      "text.primary": {
+        default: "dnd.ink",
+        _dark: "dnd.parchment",
+      },
+      "text.secondary": {
+        default: "gray.600",
+        _dark: "gray.400",
       },
     },
   },

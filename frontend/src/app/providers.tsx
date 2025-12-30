@@ -2,7 +2,8 @@
 
 import { ChakraProvider } from "@chakra-ui/react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import theme from "../theme"
 import { OpenAPI } from "../client"
 
@@ -14,6 +15,18 @@ OpenAPI.TOKEN = async () => {
   }
   return ""
 }
+
+// Add response interceptor to handle 401/403 errors
+OpenAPI.interceptors.response.use((response) => {
+  if (response.status === 401 || response.status === 403) {
+    // Clear auth data and redirect to login
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("access_token")
+      window.location.href = "/login"
+    }
+  }
+  return response
+})
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(

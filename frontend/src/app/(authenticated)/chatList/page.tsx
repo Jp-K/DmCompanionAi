@@ -13,6 +13,7 @@ import {
   Thead,
   Tr,
   Text,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
@@ -184,8 +185,12 @@ function ItemsTable() {
 }
 
 export default function ChatListPage() {
+  const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
+  const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+
   return (
-    <Container maxW="full" bg="dnd.ink" minH="100vh">
+    <Container maxW="full" bg={bgColor} minH="100vh">
       <Box py={12}>
         <Heading 
           size="lg" 
@@ -198,14 +203,14 @@ export default function ChatListPage() {
         >
           <GiScrollUnfurled /> Chat History
         </Heading>
-        <Text color="dnd.parchment" mt={2} opacity={0.8}>
+        <Text color={textColor} mt={2} opacity={0.8}>
           📜 Your chronicles of adventures past
         </Text>
       </Box>
 
       <Navbar type="Chat" addModalAs={AddItem} />
       <Box 
-        bg="dnd.leather" 
+        bg={cardBg} 
         p={6} 
         borderRadius="12px" 
         borderWidth="2px" 

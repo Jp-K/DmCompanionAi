@@ -13,6 +13,7 @@ import {
   VStack,
   Icon,
   SkeletonText,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -115,6 +116,10 @@ function Chat() {
   const [id, setId] = useState<string | undefined>(undefined)
   const searchParams = useSearchParams()
 
+  const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
+  const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+
   useEffect(() => {
     const chatId = searchParams.get("id")
     if (chatId) {
@@ -194,7 +199,7 @@ function Chat() {
       w={{ base: "100%" }}
       padding={4}
       css={tableStyles}
-      bg="dnd.ink"
+      bg={bgColor}
     >
       <VStack
         flex="1"
@@ -204,7 +209,7 @@ function Chat() {
         border="2px solid"
         borderColor="dnd.gold"
         borderRadius="12px"
-        bg="dnd.leather"
+        bg={cardBg}
         boxShadow="inset 0 0 20px rgba(0, 0, 0, 0.5)"
       >
         {messages.length === 0 && !loading && (
@@ -216,10 +221,10 @@ function Chat() {
             opacity={0.7}
           >
             <Icon as={GiMagicSwirl} boxSize={16} color="dnd.gold" mb={4} />
-            <Text color="dnd.parchment" fontFamily="'Cinzel', serif" fontSize="lg">
+            <Text color={textColor} fontFamily="'Cinzel', serif" fontSize="lg">
               Begin your quest...
             </Text>
-            <Text color="dnd.parchment" fontSize="sm" mt={2}>
+            <Text color={textColor} fontSize="sm" mt={2}>
               Ask your DM Companion anything about your RPG adventures
             </Text>
           </Flex>
@@ -299,7 +304,7 @@ function Chat() {
         p={4} 
         borderTop="2px solid" 
         borderColor="dnd.gold"
-        bg="dnd.leather"
+        bg={cardBg}
         borderRadius="0 0 12px 12px"
         mt={4}
       >
@@ -334,8 +339,9 @@ function Chat() {
 }
 
 export default function ChatPage() {
+  const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
   return (
-    <Container maxW="full" bg="dnd.ink" minH="100vh" p={0}>
+    <Container maxW="full" bg={bgColor} minH="100vh" p={0}>
       <Chat />
     </Container>
   )
