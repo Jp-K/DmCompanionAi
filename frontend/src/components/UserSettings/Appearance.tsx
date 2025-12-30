@@ -21,15 +21,14 @@ const Appearance = () => {
         </Heading>
         <RadioGroup onChange={toggleColorMode} value={colorMode}>
           <Stack>
-            {/* TODO: Add system default option */}
-            <Radio value="light" colorScheme="teal">
-              Light Mode
-              <Badge ml="1" colorScheme="teal">
+            <Radio value="dark" colorScheme="yellow">
+              Dark Mode
+              <Badge ml="1" colorScheme="yellow">
                 Default
               </Badge>
             </Radio>
-            <Radio value="dark" colorScheme="teal">
-              Dark Mode
+            <Radio value="light" colorScheme="yellow">
+              Light Mode
             </Radio>
           </Stack>
         </RadioGroup>

@@ -11,6 +11,7 @@ import {
   Box,
   Text,
   Icon,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
 import { GiCog } from "react-icons/gi"
@@ -35,8 +36,12 @@ export default function SettingsPage() {
     ? tabsConfig.slice(0, 3)
     : tabsConfig
 
+  const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
+  const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+
   return (
-    <Container maxW="full" bg="dnd.ink" minH="100vh">
+    <Container maxW="full" bg={bgColor} minH="100vh">
       <Box py={12}>
         <Heading 
           size="lg" 
@@ -49,12 +54,12 @@ export default function SettingsPage() {
         >
           <Icon as={GiCog} /> Guild Settings
         </Heading>
-        <Text color="dnd.parchment" mt={2} opacity={0.8}>
+        <Text color={textColor} mt={2} opacity={0.8}>
           ⚙️ Customize your adventurer profile
         </Text>
       </Box>
       <Box 
-        bg="dnd.leather" 
+        bg={cardBg} 
         p={6} 
         borderRadius="12px" 
         borderWidth="2px" 
@@ -66,14 +71,14 @@ export default function SettingsPage() {
             {finalTabs.map((tab, index) => (
               <Tab 
                 key={index}
-                color="dnd.parchment"
+                color={textColor}
                 fontFamily="'Cinzel', serif"
                 fontSize="sm"
                 _selected={{ 
                   color: "dnd.gold", 
                   bg: "rgba(201, 162, 39, 0.2)",
                   borderColor: "dnd.gold",
-                  borderBottomColor: "dnd.leather"
+                  borderBottomColor: cardBg
                 }}
                 _hover={{ color: "dnd.gold" }}
               >
@@ -83,7 +88,7 @@ export default function SettingsPage() {
           </TabList>
           <TabPanels>
             {finalTabs.map((tab, index) => (
-              <TabPanel key={index} color="dnd.parchment">
+              <TabPanel key={index} color={textColor}>
                 <tab.component />
               </TabPanel>
             ))}

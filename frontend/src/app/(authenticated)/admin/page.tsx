@@ -15,6 +15,7 @@ import {
   Tr,
   Text,
   Icon,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
@@ -41,6 +42,8 @@ function UsersTable() {
   const queryClient = useQueryClient()
   const searchParams = useSearchParams()
   const page = Number(searchParams.get("page")) || 1
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+  const hoverBg = useColorModeValue("rgba(201, 162, 39, 0.1)", "rgba(201, 162, 39, 0.1)")
 
   const setPage = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -105,18 +108,18 @@ function UsersTable() {
                 <Tr 
                   key={user.id} 
                   opacity={isPlaceholderData ? 0.5 : 1}
-                  _hover={{ bg: "rgba(201, 162, 39, 0.1)" }}
+                  _hover={{ bg: hoverBg }}
                   transition="background 0.2s"
                 >
                   <Td
-                    color={!user.full_name ? "gray.500" : "dnd.parchment"}
+                    color={!user.full_name ? "gray.500" : textColor}
                     isTruncated
                     maxWidth="150px"
                     borderColor="rgba(201, 162, 39, 0.3)"
                   >
                     {user.full_name || "N/A"}
                   </Td>
-                  <Td isTruncated maxWidth="150px" color="dnd.parchment" borderColor="rgba(201, 162, 39, 0.3)">
+                  <Td isTruncated maxWidth="150px" color={textColor} borderColor="rgba(201, 162, 39, 0.3)">
                     {user.email}
                   </Td>
                   <Td borderColor="rgba(201, 162, 39, 0.3)">
@@ -193,8 +196,12 @@ function UsersTable() {
 }
 
 export default function AdminPage() {
+  const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
+  const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+  
   return (
-    <Container maxW="full" bg="dnd.ink" minH="100vh">
+    <Container maxW="full" bg={bgColor} minH="100vh">
       <Box py={12}>
         <Heading 
           size="lg" 
@@ -207,14 +214,14 @@ export default function AdminPage() {
         >
           <Icon as={GiCrown} /> Guild Administration
         </Heading>
-        <Text color="dnd.parchment" mt={2} opacity={0.8}>
+        <Text color={textColor} mt={2} opacity={0.8}>
           👑 Manage the realm's adventurers
         </Text>
       </Box>
 
       <Navbar type="User" addModalAs={AddUser} />
       <Box 
-        bg="dnd.leather" 
+        bg={cardBg} 
         p={6} 
         borderRadius="12px" 
         borderWidth="2px" 

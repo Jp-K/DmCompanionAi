@@ -23,6 +23,7 @@ import {
   TabPanel,
   Tab,
   Divider,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
@@ -206,6 +207,10 @@ const rarityColors: Record<string, string> = {
 
 const ListItem = ({ item, isSelected, onClick, category }: ListItemProps) => {
   const categoryData = categories.find(c => c.key === category)
+  const itemBg = useColorModeValue("transparent", "transparent")
+  const selectedBg = useColorModeValue("rgba(201, 162, 39, 0.2)", "rgba(201, 162, 39, 0.15)")
+  const hoverBg = useColorModeValue("rgba(201, 162, 39, 0.15)", "rgba(201, 162, 39, 0.1)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
   
   // Get category-specific info
   const getExtraInfo = () => {
@@ -229,18 +234,18 @@ const ListItem = ({ item, isSelected, onClick, category }: ListItemProps) => {
     <Box
       p={3}
       cursor="pointer"
-      bg={isSelected ? "rgba(201, 162, 39, 0.15)" : "transparent"}
+      bg={isSelected ? selectedBg : itemBg}
       borderLeftWidth="3px"
       borderLeftColor={isSelected ? "dnd.gold" : "transparent"}
       transition="all 0.15s"
       _hover={{
-        bg: "rgba(201, 162, 39, 0.1)",
+        bg: hoverBg,
       }}
       onClick={onClick}
     >
       <Flex justify="space-between" align="flex-start">
         <Text
-          color={isSelected ? "dnd.gold" : "dnd.parchment"}
+          color={isSelected ? "dnd.gold" : textColor}
           fontFamily="'Cinzel', serif"
           fontWeight={isSelected ? "bold" : "medium"}
           fontSize="sm"
@@ -294,6 +299,11 @@ interface DetailCardProps {
 const DetailCard = ({ item, category }: DetailCardProps) => {
   const categoryData = categories.find(c => c.key === category)
   const CategoryIcon = categoryData?.icon || GiBookmarklet
+  const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
+  const emptyBg = useColorModeValue("rgba(74, 55, 40, 0.5)", "rgba(26, 26, 46, 0.5)")
+  const headerBg = useColorModeValue("rgba(201, 162, 39, 0.15)", "rgba(201, 162, 39, 0.1)")
+  const sectionBg = useColorModeValue("rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.2)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
   
   if (!item) {
     return (
@@ -301,7 +311,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
         h="100%" 
         align="center" 
         justify="center"
-        bg="rgba(26, 26, 46, 0.5)"
+        bg={emptyBg}
         borderRadius="md"
         borderWidth="1px"
         borderColor="rgba(201, 162, 39, 0.2)"
@@ -322,7 +332,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
     return (
       <Flex justify="space-between" py={1} borderBottomWidth="1px" borderBottomColor="rgba(201, 162, 39, 0.1)">
         <Text color="gray.400" fontSize="xs" fontWeight="semibold">{label}</Text>
-        <Text color="dnd.parchment" fontSize="xs" textAlign="right" maxW="60%">{value}</Text>
+        <Text color={textColor} fontSize="xs" textAlign="right" maxW="60%">{value}</Text>
       </Flex>
     )
   }
@@ -330,7 +340,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
   return (
     <Box
       h="100%"
-      bg="rgba(26, 26, 46, 0.9)"
+      bg={cardBg}
       borderRadius="md"
       borderWidth="1px"
       borderColor="dnd.gold"
@@ -339,7 +349,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
       {/* Header */}
       <Box
         p={4}
-        bg="rgba(201, 162, 39, 0.1)"
+        bg={headerBg}
         borderBottomWidth="1px"
         borderBottomColor="rgba(201, 162, 39, 0.3)"
       >
@@ -413,7 +423,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
         <Box
           px={4}
           py={3}
-          bg="rgba(0, 0, 0, 0.2)"
+          bg={sectionBg}
           borderBottomWidth="1px"
           borderBottomColor="rgba(201, 162, 39, 0.2)"
         >
@@ -435,7 +445,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
         <Box
           px={4}
           py={3}
-          bg="rgba(0, 0, 0, 0.2)"
+          bg={sectionBg}
           borderBottomWidth="1px"
           borderBottomColor="rgba(201, 162, 39, 0.2)"
         >
@@ -465,7 +475,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
         `}
       >
         <Text 
-          color="dnd.parchment" 
+          color={textColor} 
           fontSize="sm" 
           whiteSpace="pre-wrap"
           lineHeight="1.8"
@@ -479,7 +489,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
             <Text color="dnd.gold" fontSize="sm" fontWeight="bold" mb={2}>
               At Higher Levels
             </Text>
-            <Text color="dnd.parchment" fontSize="sm" lineHeight="1.8">
+            <Text color={textColor} fontSize="sm" lineHeight="1.8">
               {formatDescription(item.higher_level)}
             </Text>
           </Box>
@@ -505,6 +515,9 @@ const CategoryPanel = ({ category, searchQuery, isSearchMode }: CategoryPanelPro
   const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
   const itemsPerPage = 20
+  const panelBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.7)")
+  const sectionBg = useColorModeValue("rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.2)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
 
   // List query - key includes itemsPerPage to ensure proper caching
   const { 
@@ -576,7 +589,7 @@ const CategoryPanel = ({ category, searchQuery, isSearchMode }: CategoryPanelPro
       {/* Left: List */}
       <Box
         w={{ base: "100%", lg: "40%" }}
-        bg="rgba(26, 26, 46, 0.7)"
+        bg={panelBg}
         borderRadius="md"
         borderWidth="1px"
         borderColor="rgba(201, 162, 39, 0.3)"
@@ -589,10 +602,10 @@ const CategoryPanel = ({ category, searchQuery, isSearchMode }: CategoryPanelPro
           p={3}
           borderBottomWidth="1px"
           borderBottomColor="rgba(201, 162, 39, 0.2)"
-          bg="rgba(0, 0, 0, 0.2)"
+          bg={sectionBg}
         >
           <Flex justify="space-between" align="center">
-            <Text color="dnd.parchment" fontSize="sm">
+            <Text color={textColor} fontSize="sm">
               {isSearchMode 
                 ? `${total} resultados`
                 : `${total} itens`
@@ -656,7 +669,7 @@ const CategoryPanel = ({ category, searchQuery, isSearchMode }: CategoryPanelPro
             p={2}
             borderTopWidth="1px"
             borderTopColor="rgba(201, 162, 39, 0.2)"
-            bg="rgba(0, 0, 0, 0.2)"
+            bg={sectionBg}
           >
             <Flex justify="space-between" align="center">
               <Button
@@ -669,7 +682,7 @@ const CategoryPanel = ({ category, searchQuery, isSearchMode }: CategoryPanelPro
               >
                 Ant.
               </Button>
-              <Text color="dnd.parchment" fontSize="xs">
+              <Text color={textColor} fontSize="xs">
                 {currentPage + 1} / {totalPages}
               </Text>
               <Button
@@ -702,6 +715,10 @@ export default function KnowledgePage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearchMode, setIsSearchMode] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
+  const inputBg = useColorModeValue("rgba(0, 0, 0, 0.2)", "rgba(0, 0, 0, 0.3)")
+  const inputTextColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+  const tabBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.7)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
 
   // Stats query
   const { data: stats } = useQuery<StatsResponse>({
@@ -756,9 +773,9 @@ export default function KnowledgePage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              bg="rgba(0, 0, 0, 0.3)"
+              bg={inputBg}
               borderColor="rgba(201, 162, 39, 0.5)"
-              color="dnd.parchment"
+              color={inputTextColor}
               _placeholder={{ color: "gray.500" }}
               _hover={{ borderColor: "dnd.gold" }}
               _focus={{ borderColor: "dnd.gold", boxShadow: "0 0 0 1px var(--chakra-colors-dnd-gold)" }}
@@ -786,7 +803,7 @@ export default function KnowledgePage() {
         isLazy
       >
         <TabList
-          bg="rgba(26, 26, 46, 0.7)"
+          bg={tabBg}
           borderRadius="md"
           borderWidth="1px"
           borderColor="rgba(201, 162, 39, 0.3)"
@@ -814,7 +831,7 @@ export default function KnowledgePage() {
                 px={3}
                 py={2}
                 borderRadius="md"
-                color="dnd.parchment"
+                color={textColor}
                 fontFamily="'Cinzel', serif"
                 fontSize="sm"
                 fontWeight="medium"

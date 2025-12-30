@@ -9,6 +9,7 @@ import {
   Flex,
   Icon,
   VStack,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
 import Link from "next/link"
@@ -51,8 +52,12 @@ export default function DashboardPage() {
   const queryClient = useQueryClient()
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
 
+  const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
+  const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+
   return (
-    <Container maxW="full" bg="dnd.ink" minH="100vh" py={8}>
+    <Container maxW="full" bg={bgColor} minH="100vh" py={8}>
       {/* Welcome Section */}
       <Box textAlign="center" py={12}>
         <Icon as={GiDragonHead} boxSize={16} color="dnd.gold" mb={4} />
@@ -64,10 +69,10 @@ export default function DashboardPage() {
         >
           Welcome, Adventurer
         </Heading>
-        <Text color="dnd.parchment" fontSize="xl" opacity={0.9}>
+        <Text color={textColor} fontSize="xl" opacity={0.9}>
           ⚔️ {currentUser?.full_name || currentUser?.email || "Brave Hero"} ⚔️
         </Text>
-        <Text color="dnd.parchment" mt={2} opacity={0.7}>
+        <Text color={textColor} mt={2} opacity={0.7}>
           Your DM Companion awaits your command
         </Text>
       </Box>
@@ -91,7 +96,7 @@ export default function DashboardPage() {
               as={Link}
               href={action.path}
               key={action.title}
-              bg="dnd.leather"
+              bg={cardBg}
               p={6}
               borderRadius="12px"
               borderWidth="2px"
@@ -113,7 +118,7 @@ export default function DashboardPage() {
                 >
                   {action.title}
                 </Heading>
-                <Text color="dnd.parchment" textAlign="center" fontSize="sm">
+                <Text color={textColor} textAlign="center" fontSize="sm">
                   {action.description}
                 </Text>
               </VStack>
@@ -126,7 +131,7 @@ export default function DashboardPage() {
       <Box 
         py={8} 
         mt={8}
-        bg="dnd.leather"
+        bg={cardBg}
         borderRadius="12px"
         borderWidth="2px"
         borderColor="dnd.gold"
@@ -142,7 +147,7 @@ export default function DashboardPage() {
         >
           Ready for Adventure?
         </Heading>
-        <Text color="dnd.parchment" maxW="600px" mx="auto">
+        <Text color={textColor} maxW="600px" mx="auto">
           Your DM Companion is an AI-powered assistant designed to help Game Masters 
           create immersive RPG experiences. Ask about rules, generate NPCs, create 
           encounters, or seek advice for your campaigns.

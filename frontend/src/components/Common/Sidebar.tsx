@@ -11,6 +11,7 @@ import {
   IconButton,
   Text,
   useDisclosure,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
 import { FiLogOut, FiMenu } from "react-icons/fi"
@@ -25,6 +26,10 @@ const Sidebar = () => {
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { logout } = useAuth()
+
+  const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
+  const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
 
   const handleLogout = async () => {
     logout()
@@ -41,17 +46,17 @@ const Sidebar = () => {
         fontSize="20px"
         m={4}
         icon={<FiMenu />}
-        bg="dnd.leather"
+        bg={cardBg}
         color="dnd.gold"
         borderWidth="2px"
         borderColor="dnd.gold"
-        _hover={{ bg: "dnd.gold", color: "dnd.leather" }}
+        _hover={{ bg: "dnd.gold", color: cardBg }}
       />
       <Drawer isOpen={isOpen} placement="left" onClose={onClose}>
         <DrawerOverlay bg="blackAlpha.800" />
         <DrawerContent 
           maxW="250px" 
-          bg="dnd.leather"
+          bg={cardBg}
           borderRightWidth="3px"
           borderColor="dnd.gold"
         >
@@ -88,7 +93,7 @@ const Sidebar = () => {
               </Box>
               <Box mt="auto">
                 {currentUser?.email && (
-                  <Text color="dnd.parchment" noOfLines={2} fontSize="sm" p={2} opacity={0.8}>
+                  <Text color={textColor} noOfLines={2} fontSize="sm" p={2} opacity={0.8}>
                     ⚔️ {currentUser.email}
                   </Text>
                 )}
@@ -110,7 +115,7 @@ const Sidebar = () => {
 
       {/* Desktop */}
       <Box
-        bg="dnd.ink"
+        bg={bgColor}
         p={3}
         h="100vh"
         position="sticky"
@@ -120,7 +125,7 @@ const Sidebar = () => {
         <Flex
           flexDir="column"
           justify="space-between"
-          bg="dnd.leather"
+          bg={cardBg}
           p={4}
           borderRadius={12}
           borderWidth="2px"
@@ -145,7 +150,7 @@ const Sidebar = () => {
           <Box mt="auto">
             {currentUser?.email && (
               <Text
-                color="dnd.parchment"
+                color={textColor}
                 noOfLines={2}
                 fontSize="sm"
                 p={2}
