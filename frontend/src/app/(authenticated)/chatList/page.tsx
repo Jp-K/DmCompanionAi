@@ -5,20 +5,18 @@ import {
   Container,
   Heading,
   SkeletonText,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
   Text,
+  VStack,
+  HStack,
+  Icon,
+  Badge,
+  Flex,
   useColorModeValue,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { GiScrollUnfurled } from "react-icons/gi"
+import { GiScrollUnfurled, GiSpeaker, GiQuillInk } from "react-icons/gi"
 
 import { ChatsService } from "../../../client"
 import ActionsMenu from "../../../components/Common/ActionsMenu"
@@ -27,7 +25,7 @@ import Navbar from "../../../components/Common/Navbar"
 import AddItem from "../../../components/Items/AddItem"
 import { PaginationFooter } from "../../../components/Common/PaginationFooter"
 
-const PER_PAGE = 5
+const PER_PAGE = 10
 
 function getItemsQueryOptions({ page }: { page: number }) {
   return {
@@ -35,6 +33,110 @@ function getItemsQueryOptions({ page }: { page: number }) {
       ChatsService.readItems({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
     queryKey: ["items", { page }],
   }
+}
+
+function ChatCard({ 
+  item, 
+  isPlaceholderData 
+}: { 
+  item: any; 
+  isPlaceholderData: boolean 
+}) {
+  const cardBg = useColorModeValue("rgba(74, 55, 40, 0.5)", "rgba(26, 26, 46, 0.7)")
+  const hoverBg = useColorModeValue("rgba(74, 55, 40, 0.7)", "rgba(26, 26, 46, 0.9)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+  const mutedColor = useColorModeValue("gray.400", "gray.500")
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString)
+      const now = new Date()
+      const diffMs = now.getTime() - date.getTime()
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHours = Math.floor(diffMs / 3600000)
+      const diffDays = Math.floor(diffMs / 86400000)
+
+      if (diffMins < 1) return "agora mesmo"
+      if (diffMins < 60) return `há ${diffMins} minuto${diffMins > 1 ? "s" : ""}`
+      if (diffHours < 24) return `há ${diffHours} hora${diffHours > 1 ? "s" : ""}`
+      if (diffDays < 7) return `há ${diffDays} dia${diffDays > 1 ? "s" : ""}`
+      
+      return date.toLocaleDateString("pt-BR", { 
+        day: "2-digit", 
+        month: "short", 
+        year: "numeric" 
+      })
+    } catch {
+      return "Data desconhecida"
+    }
+  }
+
+  return (
+    <Box
+      bg={cardBg}
+      p={4}
+      borderRadius="12px"
+      borderWidth="1px"
+      borderColor="rgba(201, 162, 39, 0.3)"
+      opacity={isPlaceholderData ? 0.5 : 1}
+      _hover={{ 
+        bg: hoverBg, 
+        borderColor: "dnd.gold",
+        transform: "translateY(-2px)",
+        boxShadow: "0 4px 12px rgba(201, 162, 39, 0.2)"
+      }}
+      transition="all 0.2s"
+      cursor="pointer"
+    >
+      <Flex justify="space-between" align="flex-start">
+        <VStack align="start" spacing={2} flex={1}>
+          <HStack spacing={2}>
+            <Icon as={GiQuillInk} color="dnd.gold" />
+            <Text 
+              color={textColor} 
+              fontFamily="'Cinzel', serif" 
+              fontWeight="bold"
+              fontSize="lg"
+              noOfLines={1}
+            >
+              {item.title || "Conversa sem título"}
+            </Text>
+          </HStack>
+          
+          {item.description && (
+            <Text 
+              color={mutedColor} 
+              fontSize="sm" 
+              noOfLines={2}
+              pl={6}
+            >
+              {item.description}
+            </Text>
+          )}
+          
+          <HStack spacing={3} pl={6}>
+            <Badge 
+              colorScheme="yellow" 
+              variant="subtle"
+              fontSize="xs"
+              borderRadius="full"
+            >
+              🕐 {item.created_at ? formatDate(item.created_at) : "Recente"}
+            </Badge>
+          </HStack>
+        </VStack>
+        
+        <HStack spacing={2}>
+          <ActionsOpenItem id={item.id} disabled={isPlaceholderData} />
+          <ActionsMenu
+            type="Item"
+            value={item}
+            disabled={isPlaceholderData}
+          />
+        </HStack>
+      </Flex>
+    </Box>
+  )
 }
 
 function ItemsTable() {
@@ -66,114 +168,53 @@ function ItemsTable() {
     }
   }, [page, queryClient, hasNextPage])
 
+  const emptyBg = useColorModeValue("rgba(74, 55, 40, 0.3)", "rgba(26, 26, 46, 0.5)")
+  const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+
   return (
     <>
-      <TableContainer>
-        <Table size={{ base: "sm", md: "md" }}>
-          <Thead>
-            <Tr>
-              <Th 
-                color="dnd.gold" 
-                fontFamily="'Cinzel', serif"
-                borderColor="dnd.gold"
-                width="20%"
+      <VStack spacing={3} align="stretch">
+        {isPending ? (
+          <>
+            {new Array(3).fill(null).map((_, index) => (
+              <Box 
+                key={index} 
+                p={4} 
+                borderRadius="12px" 
+                borderWidth="1px"
+                borderColor="rgba(201, 162, 39, 0.2)"
               >
-                ID
-              </Th>
-              <Th 
-                color="dnd.gold" 
-                fontFamily="'Cinzel', serif"
-                borderColor="dnd.gold"
-                width="20%"
-              >
-                Title
-              </Th>
-              <Th 
-                color="dnd.gold" 
-                fontFamily="'Cinzel', serif"
-                borderColor="dnd.gold"
-                width="50%"
-              >
-                Description
-              </Th>
-              <Th 
-                color="dnd.gold" 
-                fontFamily="'Cinzel', serif"
-                borderColor="dnd.gold"
-                width="5%"
-              >
-                Open
-              </Th>
-              <Th 
-                color="dnd.gold" 
-                fontFamily="'Cinzel', serif"
-                borderColor="dnd.gold"
-                width="5%"
-              >
-                Actions
-              </Th>
-            </Tr>
-          </Thead>
-          {isPending ? (
-            <Tbody>
-              <Tr>
-                {new Array(5).fill(null).map((_, index) => (
-                  <Td key={index} borderColor="rgba(201, 162, 39, 0.3)">
-                    <SkeletonText noOfLines={1} paddingBlock="16px" />
-                  </Td>
-                ))}
-              </Tr>
-            </Tbody>
-          ) : (
-            <Tbody>
-              {items?.data.map((item) => (
-                <Tr 
-                  key={item.id} 
-                  opacity={isPlaceholderData ? 0.5 : 1}
-                  _hover={{ bg: "rgba(201, 162, 39, 0.1)" }}
-                  transition="background 0.2s"
-                >
-                  <Td 
-                    isTruncated 
-                    maxWidth="150px"
-                    color="dnd.parchment"
-                    borderColor="rgba(201, 162, 39, 0.3)"
-                  >
-                    {item.id}
-                  </Td>
-                  <Td 
-                    isTruncated 
-                    maxWidth="150px"
-                    color="dnd.parchment"
-                    fontWeight="medium"
-                    borderColor="rgba(201, 162, 39, 0.3)"
-                  >
-                    {item.title}
-                  </Td>
-                  <Td
-                    color={!item.description ? "gray.500" : "dnd.parchment"}
-                    isTruncated
-                    maxWidth="150px"
-                    borderColor="rgba(201, 162, 39, 0.3)"
-                  >
-                    {item.description || "N/A"}
-                  </Td>
-                  <Td borderColor="rgba(201, 162, 39, 0.3)">
-                    <ActionsOpenItem id={item.id} disabled={isPlaceholderData} />
-                  </Td>
-                  <Td borderColor="rgba(201, 162, 39, 0.3)">
-                    <ActionsMenu
-                      type="Item"
-                      value={item}
-                      disabled={isPlaceholderData}
-                    />
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          )}
-        </Table>
-      </TableContainer>
+                <SkeletonText noOfLines={2} spacing={3} />
+              </Box>
+            ))}
+          </>
+        ) : items?.data.length === 0 ? (
+          <Box 
+            bg={emptyBg}
+            p={8} 
+            borderRadius="12px" 
+            textAlign="center"
+            borderWidth="1px"
+            borderColor="rgba(201, 162, 39, 0.2)"
+          >
+            <Icon as={GiSpeaker} fontSize="48px" color="gray.500" mb={4} />
+            <Text color={textColor} fontFamily="'Cinzel', serif">
+              Nenhuma conversa encontrada
+            </Text>
+            <Text color="gray.500" fontSize="sm" mt={2}>
+              Inicie uma nova conversa com o DM Companion
+            </Text>
+          </Box>
+        ) : (
+          items?.data.map((item) => (
+            <ChatCard 
+              key={item.id} 
+              item={item} 
+              isPlaceholderData={isPlaceholderData} 
+            />
+          ))
+        )}
+      </VStack>
       <PaginationFooter
         page={page}
         onChangePage={setPage}
@@ -208,7 +249,7 @@ export default function ChatListPage() {
         </Text>
       </Box>
 
-      <Navbar type="Chat" addModalAs={AddItem} />
+      {/* <Navbar type="Chat" addModalAs={AddItem} /> */}
       <Box 
         bg={cardBg} 
         p={6} 
