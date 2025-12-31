@@ -24,8 +24,9 @@ import {
   Tab,
   Divider,
   useColorModeValue,
+  useDisclosure,
 } from "@chakra-ui/react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { marked } from "marked"
 import { 
@@ -39,10 +40,12 @@ import {
   GiRunningNinja,
   GiLightBackpack,
   GiFeather,
+  GiDiceSixFacesFive,
 } from "react-icons/gi"
 import { FiSearch, FiChevronLeft, FiChevronRight } from "react-icons/fi"
 
 import { KnowledgeService, type CategoryType, type KnowledgeItem, type StatsResponse } from "../../../client"
+import { DiceRoller } from "../../../components/DiceRoller"
 
 marked.setOptions({
   gfm: true,
@@ -104,43 +107,143 @@ function extractDisplayText(type: string, value: string, parts: string[]): strin
   return value.trim()
 }
 
-// Função para formatar referências no texto
-function formatDescription(text: string): React.ReactNode[] {
+// Componente para chip de dado clicável
+interface DiceChipProps {
+  formula: string
+  onRoll: (formula: string) => void
+}
+
+const DiceChip = ({ formula, onRoll }: DiceChipProps) => (
+  <Badge
+    as="button"
+    colorScheme="purple"
+    variant="subtle"
+    fontSize="xs"
+    px={2}
+    py={0.5}
+    borderRadius="full"
+    cursor="pointer"
+    display="inline-flex"
+    alignItems="center"
+    gap={1}
+    transition="all 0.15s"
+    _hover={{
+      bg: "purple.600",
+      color: "white",
+      transform: "scale(1.05)",
+    }}
+    onClick={(e) => {
+      e.stopPropagation()
+      onRoll(formula)
+    }}
+  >
+    <Icon as={GiDiceSixFacesFive} fontSize="10px" />
+    {formula}
+  </Badge>
+)
+
+// Função para formatar referências no texto - agora também detecta dados de RPG
+function formatDescription(text: string, onDiceRoll?: (formula: string) => void): React.ReactNode[] {
   if (!text) return []
   
-  // Regex mais robusto para capturar padrões como {@type value}, {@type value|source}, {@type value|source|display}
-  // Também captura {{@type value}}
-  const regex = /\{\{?@(\w+)\s+([^{}]+?)\}?\}/g
+  // Primeiro, processar referências 5e-tools
+  const refRegex = /\{\{?@(\w+)\s+([^{}]+?)\}?\}/g
+  
+  // Regex para dados de RPG: 1d20, 2d6+5, 3d8-2, 1d20+1d6+5, etc.
+  // Captura padrões como: NdN, NdN+N, NdN-N, NdN+NdN, etc.
+  const diceRegex = /\b(\d+d\d+(?:\s*[+-]\s*(?:\d+d\d+|\d+))*)\b/gi
+  
+  // Combinar todos os padrões em uma única regex
+  const combinedRegex = /(\{\{?@\w+\s+[^{}]+?\}?\})|(\b\d+d\d+(?:\s*[+-]\s*(?:\d+d\d+|\d+))*\b)/gi
   
   const parts: React.ReactNode[] = []
   let lastIndex = 0
   let match
   let keyIndex = 0
   
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = combinedRegex.exec(text)) !== null) {
     // Adiciona texto antes do match
     if (match.index > lastIndex) {
       parts.push(text.slice(lastIndex, match.index))
     }
     
-    const type = match[1].toLowerCase()
-    const rawValue = match[2].trim()
+    const fullMatch = match[0]
     
-    // Divide o valor em partes pelo separador |
-    const valueParts = rawValue.split("|")
-    const displayText = extractDisplayText(type, rawValue, valueParts)
-    
-    // Cria texto destacado com cor diferente
-    parts.push(
-      <Text
-        key={`ref-${keyIndex++}`}
-        as="span"
-        color="dnd.gold"
-        fontWeight="semibold"
-      >
-        {displayText}
-      </Text>
-    )
+    // Verificar se é uma referência 5e-tools
+    if (fullMatch.startsWith("{")) {
+      const refMatch = /\{\{?@(\w+)\s+([^{}]+?)\}?\}/.exec(fullMatch)
+      if (refMatch) {
+        const type = refMatch[1].toLowerCase()
+        const rawValue = refMatch[2].trim()
+        const valueParts = rawValue.split("|")
+        const displayText = extractDisplayText(type, rawValue, valueParts)
+        
+        // Verificar se é uma tag de dado (@damage, @dice, @hit, @d20, @scaledamage, @scaledice)
+        const diceTypes = ["damage", "dice", "hit", "d20", "scaledamage", "scaledice"]
+        if (diceTypes.includes(type) && onDiceRoll) {
+          // Extrair a fórmula de dado do valor (pode ter modificadores como 1d6+2)
+          const diceMatch = displayText.match(/\d+d\d+(?:\s*[+-]\s*(?:\d+d\d+|\d+))*/i)
+          if (diceMatch) {
+            const formula = diceMatch[0].replace(/\s/g, "")
+            parts.push(
+              <DiceChip
+                key={`dice-${keyIndex++}`}
+                formula={formula}
+                onRoll={onDiceRoll}
+              />
+            )
+          } else {
+            // Fallback: exibe como texto dourado se não conseguir extrair fórmula
+            parts.push(
+              <Text
+                key={`ref-${keyIndex++}`}
+                as="span"
+                color="dnd.gold"
+                fontWeight="semibold"
+              >
+                {displayText}
+              </Text>
+            )
+          }
+        } else {
+          parts.push(
+            <Text
+              key={`ref-${keyIndex++}`}
+              as="span"
+              color="dnd.gold"
+              fontWeight="semibold"
+            >
+              {displayText}
+            </Text>
+          )
+        }
+      }
+    } else {
+      // É um padrão de dado de RPG
+      const diceFormula = fullMatch.replace(/\s/g, "")
+      
+      if (onDiceRoll) {
+        parts.push(
+          <DiceChip
+            key={`dice-${keyIndex++}`}
+            formula={diceFormula}
+            onRoll={onDiceRoll}
+          />
+        )
+      } else {
+        // Se não há callback, apenas destaca o texto
+        parts.push(
+          <Text
+            key={`dice-${keyIndex++}`}
+            as="span"
+            color="purple.400"
+            fontWeight="semibold"
+          >
+            {diceFormula}
+          </Text>
+        )
+      }
+    }
     
     lastIndex = match.index + match[0].length
   }
@@ -294,9 +397,10 @@ const ListItem = ({ item, isSelected, onClick, category }: ListItemProps) => {
 interface DetailCardProps {
   item: KnowledgeItem | null
   category: CategoryType
+  onDiceRoll?: (formula: string) => void
 }
 
-const DetailCard = ({ item, category }: DetailCardProps) => {
+const DetailCard = ({ item, category, onDiceRoll }: DetailCardProps) => {
   const categoryData = categories.find(c => c.key === category)
   const CategoryIcon = categoryData?.icon || GiBookmarklet
   const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
@@ -480,7 +584,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
           whiteSpace="pre-wrap"
           lineHeight="1.8"
         >
-          {formatDescription(item.description || item.document || "Sem descrição disponível.")}
+          {formatDescription(item.description || item.document || "Sem descrição disponível.", onDiceRoll)}
         </Text>
 
         {/* Higher Level section for spells */}
@@ -490,7 +594,7 @@ const DetailCard = ({ item, category }: DetailCardProps) => {
               At Higher Levels
             </Text>
             <Text color={textColor} fontSize="sm" lineHeight="1.8">
-              {formatDescription(item.higher_level)}
+              {formatDescription(item.higher_level, onDiceRoll)}
             </Text>
           </Box>
         )}
@@ -514,10 +618,18 @@ interface CategoryPanelProps {
 const CategoryPanel = ({ category, searchQuery, isSearchMode }: CategoryPanelProps) => {
   const [selectedItem, setSelectedItem] = useState<KnowledgeItem | null>(null)
   const [currentPage, setCurrentPage] = useState(0)
+  const [diceFormula, setDiceFormula] = useState("")
+  const { isOpen: isDiceRollerOpen, onOpen: onDiceRollerOpen, onClose: onDiceRollerClose } = useDisclosure()
   const itemsPerPage = 20
   const panelBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.7)")
   const sectionBg = useColorModeValue("rgba(0, 0, 0, 0.1)", "rgba(0, 0, 0, 0.2)")
   const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+
+  // Handle dice roll click
+  const handleDiceRoll = useCallback((formula: string) => {
+    setDiceFormula(formula)
+    onDiceRollerOpen()
+  }, [onDiceRollerOpen])
 
   // List query - key includes itemsPerPage to ensure proper caching
   const { 
@@ -705,8 +817,15 @@ const CategoryPanel = ({ category, searchQuery, isSearchMode }: CategoryPanelPro
         w={{ base: "0", lg: "60%" }}
         display={{ base: "none", lg: "block" }}
       >
-        <DetailCard item={selectedItem} category={category} />
+        <DetailCard item={selectedItem} category={category} onDiceRoll={handleDiceRoll} />
       </Box>
+      
+      {/* Dice Roller Modal */}
+      <DiceRoller 
+        isOpen={isDiceRollerOpen} 
+        onClose={onDiceRollerClose} 
+        initialFormula={diceFormula}
+      />
     </Flex>
   )
 }
