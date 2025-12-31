@@ -75,7 +75,7 @@ export class ChatsService {
   public static sendMessageStreaming(
     payload: { message: string, id?: string },
     onMessage: (message: string) => void,
-    onFinished: () => void,
+    onFinished: (chatId?: string) => void,
   ): CancelablePromise<void> {
     return requestStreaming(OpenAPI, {
       method: "POST",
@@ -86,6 +86,35 @@ export class ChatsService {
         422: "Validation Error",
       },
     }, onMessage, onFinished);
+  }
+
+  /**
+   * Get Chat Messages
+   * Retrieve all messages for a specific chat.
+   * @param chatId The ID of the chat to get messages from
+   * @returns ChatMessagesResponse with array of messages
+   * @throws ApiError
+   */
+  public static getChatMessages(
+    chatId: string,
+  ): CancelablePromise<{
+    chat_id: string;
+    messages: Array<{
+      id: string;
+      content: string;
+      role: "user" | "assistant";
+      created_at: string;
+    }>;
+  }> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: `/api/v1/chats/${chatId}/messages/`,
+      errors: {
+        404: "Chat not found",
+        403: "Not authorized",
+        422: "Validation Error",
+      },
+    })
   }
 
   /**

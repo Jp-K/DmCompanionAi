@@ -391,6 +391,7 @@ export const request = <T>(
  * @param config The OpenAPI configuration object
  * @param options The request options from the service
  * @param onMessage Callback function to handle streaming messages
+ * @param onFinished Callback function when streaming is complete, receives chat ID if present
  * @param axiosClient The axios client instance to use
  * @returns CancelablePromise<void>
  * @throws ApiError
@@ -399,7 +400,7 @@ export const requestStreaming = (
   config: OpenAPIConfig,
   options: ApiRequestOptions<void>,
   onMessage: (message: string) => void,
-  onFinished: () => void,
+  onFinished: (chatId?: string) => void,
   axiosClient: AxiosInstance = axios,
 ): CancelablePromise<void> => {
   return new CancelablePromise(async (resolve, reject, onCancel) => {
@@ -423,8 +424,13 @@ export const requestStreaming = (
         onDownloadProgress: (progressEvent) => {
           const responseStream = (progressEvent.event as any).target.response;
           if (typeof responseStream === "string" && responseStream.includes("[FINISHED]")) {
-            onMessage(responseStream.replace("[FINISHED]", ""));
-            onFinished();
+            // Extract chat ID if present: [CHAT_ID]{uuid}[FINISHED]
+            const chatIdMatch = responseStream.match(/\[CHAT_ID\]([a-f0-9-]+)\[FINISHED\]/);
+            const chatId = chatIdMatch ? chatIdMatch[1] : undefined;
+            // Remove the [CHAT_ID]...[FINISHED] marker from the message
+            const cleanMessage = responseStream.replace(/\[CHAT_ID\][a-f0-9-]+\[FINISHED\]/, "").replace("[FINISHED]", "");
+            onMessage(cleanMessage);
+            onFinished(chatId);
           } else {
             onMessage(responseStream);
           }

@@ -32,80 +32,6 @@ const formatMessage = (text: string) => {
   return html.replace(/<table>/g, '<table class="custom-table">')
 }
 
-const tableStyles = css`
-  .custom-table {
-    width: 100%;
-    border-collapse: collapse;
-    border: 1px solid #C9A227;
-  }
-
-  .custom-table th,
-  .custom-table td {
-    border: 1px solid #C9A227;
-    padding: 8px;
-    color: #F5E6D3;
-  }
-
-  .custom-table th {
-    text-align: left;
-    background: rgba(201, 162, 39, 0.2);
-    color: #C9A227;
-    font-family: 'Cinzel', serif;
-  }
-
-  .message-content {
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    border-collapse: collapse;
-  }
-
-  .message-content ul {
-    list-style-type: none;
-    padding-left: 1rem;
-  }
-
-  .message-content ul li::before {
-    content: "⚔️ ";
-  }
-
-  .message-content ol {
-    list-style-type: none;
-    counter-reset: item;
-    padding-left: 1rem;
-  }
-
-  .message-content ol li::before {
-    counter-increment: item;
-    content: counter(item) ". ";
-    color: #C9A227;
-    font-weight: bold;
-  }
-
-  .message-content strong {
-    color: #8B0000;
-  }
-
-  .message-content code {
-    background: rgba(201, 162, 39, 0.2);
-    padding: 2px 6px;
-    border-radius: 4px;
-    color: #E6C84A;
-  }
-
-  .message-content pre {
-    background: #1A0F0A;
-    border: 1px solid #C9A227;
-    border-radius: 8px;
-    padding: 1rem;
-    overflow-x: auto;
-  }
-
-  .message-content a {
-    color: #E6C84A;
-    text-decoration: underline;
-  }
-`
-
 function Chat() {
   const [messages, setMessages] = useState<
     { text: string; sender: "user" | "ai" }[]
@@ -119,13 +45,120 @@ function Chat() {
   const bgColor = useColorModeValue("dnd.ink", "#0d0d1a")
   const cardBg = useColorModeValue("dnd.leather", "rgba(26, 26, 46, 0.9)")
   const textColor = useColorModeValue("dnd.parchment", "dnd.parchment")
+  const userMsgBg = useColorModeValue("dnd.parchmentDark", "rgba(201, 162, 39, 0.15)")
+  const userMsgBorder = useColorModeValue("dnd.ink", "dnd.gold")
+  const userMsgText = useColorModeValue("dnd.ink", "dnd.parchment")
+  const aiMsgBg = useColorModeValue("rgba(74, 55, 40, 0.7)", "rgba(20, 20, 30, 0.8)")
+  const aiMsgBorder = useColorModeValue("dnd.gold", "rgba(201, 162, 39, 0.3)")
+  const aiMsgText = useColorModeValue("dnd.parchment", "dnd.parchment")
+  const inputBg = useColorModeValue("dnd.parchmentDark", "rgba(0, 0, 0, 0.3)")
+  const inputBorder = useColorModeValue("dnd.gold", "rgba(201, 162, 39, 0.5)")
+  const placeholderColor = useColorModeValue("dnd.ink", "gray.500")
+  const emptyTextColor = useColorModeValue("dnd.parchment", "gray.400")
+
+  // Dynamic CSS styles that adapt to theme
+  const tableTextColor = useColorModeValue("#1A0F0A", "#F5E6D3")
+  const strongColor = useColorModeValue("#8B0000", "#E6C84A")
+  const codeColor = useColorModeValue("#8B4513", "#E6C84A")
+  const preBg = useColorModeValue("rgba(201, 162, 39, 0.1)", "#1A0F0A")
+  const linkColor = useColorModeValue("#8B4513", "#E6C84A")
+
+  const tableStyles = css`
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #C9A227;
+    }
+
+    .custom-table th,
+    .custom-table td {
+      border: 1px solid #C9A227;
+      padding: 8px;
+      color: ${tableTextColor};
+    }
+
+    .custom-table th {
+      text-align: left;
+      background: rgba(201, 162, 39, 0.2);
+      color: #C9A227;
+      font-family: 'Cinzel', serif;
+    }
+
+    .message-content {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      border-collapse: collapse;
+    }
+
+    .message-content ul {
+      list-style-type: none;
+      padding-left: 1rem;
+    }
+
+    .message-content ul li::before {
+      content: "⚔️ ";
+    }
+
+    .message-content ol {
+      list-style-type: none;
+      counter-reset: item;
+      padding-left: 1rem;
+    }
+
+    .message-content ol li::before {
+      counter-increment: item;
+      content: counter(item) ". ";
+      color: #C9A227;
+      font-weight: bold;
+    }
+
+    .message-content strong {
+      color: ${strongColor};
+    }
+
+    .message-content code {
+      background: rgba(201, 162, 39, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: ${codeColor};
+    }
+
+    .message-content pre {
+      background: ${preBg};
+      border: 1px solid #C9A227;
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+
+    .message-content a {
+      color: ${linkColor};
+      text-decoration: underline;
+    }
+  `
 
   useEffect(() => {
     const chatId = searchParams.get("id")
     if (chatId) {
       setId(chatId)
+      loadChatMessages(chatId)
     }
   }, [searchParams])
+
+  const loadChatMessages = async (chatId: string) => {
+    try {
+      const response = await ChatsService.getChatMessages(chatId)
+      if (response.messages && response.messages.length > 0) {
+        const loadedMessages = response.messages.map((msg) => ({
+          text: msg.content,
+          sender: msg.role === "user" ? "user" as const : "ai" as const,
+        }))
+        setMessages(loadedMessages)
+      }
+    } catch (error) {
+      console.error("Failed to load chat messages:", error)
+    }
+  }
 
   const handleSend = async (): Promise<void> => {
     if (input.trim()) {
@@ -167,7 +200,10 @@ function Chat() {
           setCurrentMessage(message)
           currentMessageTemp = message
         },
-        () => {
+        (chatId) => {
+          if (chatId) {
+            setId(chatId)
+          }
           setMessages((prevMessages) => [
             ...prevMessages,
             { text: currentMessageTemp, sender: "ai" },
@@ -221,10 +257,10 @@ function Chat() {
             opacity={0.7}
           >
             <Icon as={GiMagicSwirl} boxSize={16} color="dnd.gold" mb={4} />
-            <Text color={textColor} fontFamily="'Cinzel', serif" fontSize="lg">
+            <Text color={emptyTextColor} fontFamily="'Cinzel', serif" fontSize="lg">
               Begin your quest...
             </Text>
-            <Text color={textColor} fontSize="sm" mt={2}>
+            <Text color={emptyTextColor} fontSize="sm" mt={2}>
               Ask your DM Companion anything about your RPG adventures
             </Text>
           </Flex>
@@ -233,18 +269,18 @@ function Chat() {
           <Box
             key={index}
             alignSelf={message.sender === "user" ? "flex-end" : "flex-start"}
-            bg={message.sender === "user" ? "dnd.parchmentDark" : "dnd.parchmentDark"}
+            bg={message.sender === "user" ? userMsgBg : aiMsgBg}
             p={4}
             borderRadius="12px"
             maxWidth="80%"
             whiteSpace="pre-wrap"
             borderWidth="1px"
-            borderColor={message.sender === "user" ? "dnd.ink" : "dnd.ink"}
-            boxShadow={message.sender === "user" ? "0 0 10px rgba(201, 162, 39, 0.8)" : "none"}
+            borderColor={message.sender === "user" ? userMsgBorder : aiMsgBorder}
+            boxShadow={message.sender === "user" ? "0 0 10px rgba(201, 162, 39, 0.5)" : "none"}
           >
             <Text
               fontSize="xs"
-              color={message.sender === "user" ? "dnd.ink" : "dnd.ink"}
+              color={message.sender === "user" ? userMsgText : aiMsgText}
               fontFamily="'Cinzel', serif"
               mb={2}
               fontWeight="bold"
@@ -254,7 +290,7 @@ function Chat() {
             <Text
               className="message-content"
               fontFamily="'Cinzel', serif"
-              color="dnd.ink"
+              color={message.sender === "user" ? userMsgText : aiMsgText}
               dangerouslySetInnerHTML={{ __html: formatMessage(message.text) }}
             />
           </Box>
@@ -262,18 +298,18 @@ function Chat() {
         {loading && (
           <Box
             alignSelf="flex-start"
-            bg="rgba(26, 15, 10, 0.8)"
+            bg={aiMsgBg}
             p={4}
             borderRadius="12px"
             maxWidth="80%"
             width={{ base: "100%", md: "80%" }}
             whiteSpace="pre-wrap"
             borderWidth="1px"
-            borderColor="dnd.leather"
+            borderColor={aiMsgBorder}
           >
             <Text
               fontSize="xs"
-              color="dnd.parchment"
+              color={aiMsgText}
               fontFamily="'Cinzel', serif"
               mb={2}
               fontWeight="bold"
@@ -282,7 +318,7 @@ function Chat() {
             </Text>
             <Text
               className="message-content"
-              color="dnd.parchment"
+              color={aiMsgText}
               fontSize={"21px"}
               fontWeight={500}
               fontFamily="'Cinzel', serif"
@@ -316,10 +352,10 @@ function Chat() {
           resize="none"
           mr={3}
           rows={3}
-          bg="dnd.parchmentDark"
-          color="dnd.ink"
-          borderColor="dnd.gold"
-          _placeholder={{ color: "dnd.ink" }}
+          bg={inputBg}
+          color={textColor}
+          borderColor={inputBorder}
+          _placeholder={{ color: placeholderColor }}
           _focus={{ borderColor: "dnd.goldLight", boxShadow: "0 0 10px rgba(201, 162, 39, 0.3)" }}
           fontFamily="inherit"
         />

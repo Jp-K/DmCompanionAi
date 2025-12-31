@@ -58,7 +58,7 @@ def read_items(
     if current_user.is_superuser:
         count_statement = select(func.count()).select_from(Chat)
         count = session.exec(count_statement).one()
-        statement = select(Chat).offset(skip).limit(limit)
+        statement = select(Chat).order_by(Chat.created_at.desc()).offset(skip).limit(limit)
         items = session.exec(statement).all()
     else:
         count_statement = (
@@ -70,6 +70,7 @@ def read_items(
         statement = (
             select(Chat)
             .where(Chat.owner_id == current_user.id)
+            .order_by(Chat.created_at.desc())
             .offset(skip)
             .limit(limit)
         )
