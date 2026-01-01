@@ -59,7 +59,7 @@ const tableStyles = css`
   }
 
   .message-content ul li::before {
-    content: "⚔️ ";
+    content: "• ";
   }
 
   .message-content ol {

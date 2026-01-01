@@ -14,6 +14,7 @@
     "@emotion/styled": "^11.11.0",
     "@platejs/basic-nodes": "^52.0.1",
     "@tanstack/react-query": "^5.17.9",
+    "@types/recharts": "^2.0.1",
     "axios": "^1.6.5",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.0.0",
@@ -24,6 +25,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.49.3",
     "react-icons": "^5.0.1",
+    "recharts": "^3.6.0",
     "slate": "^0.103.0",
     "slate-react": "^0.110.0",
     "zod": "^3.22.4"

@@ -773,3 +773,45 @@ export class KnowledgeService {
     })
   }
 }
+
+
+export interface DiceProbabilityResult {
+  formula: string
+  min_value: number
+  max_value: number
+  mean: number
+  std_dev: number
+  mode: number
+  mode_probability: number
+  probabilities: Array<{
+    value: number
+    probability: number
+    percentage: number
+    cumulative: number
+    cumulative_percentage: number
+  }>
+}
+
+export class ToolsService {
+  /**
+   * Calculate Dice Probability
+   * Calculate the probability distribution for a dice formula.
+   * @param formula The dice formula (e.g., "2d6+3", "1d20+5")
+   * @returns DiceProbabilityResult with probability distribution
+   * @throws ApiError
+   */
+  public static calculateDiceProbability(
+    formula: string,
+  ): CancelablePromise<DiceProbabilityResult> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/tools/dice-probability",
+      body: { formula },
+      mediaType: "application/json",
+      errors: {
+        400: "Invalid formula",
+        422: "Validation Error",
+      },
+    })
+  }
+}
