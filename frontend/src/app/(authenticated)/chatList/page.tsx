@@ -17,6 +17,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { GiScrollUnfurled, GiSpeaker, GiQuillInk } from "react-icons/gi"
+import { FiClock } from "react-icons/fi"
 
 import { ChatsService } from "../../../client"
 import ActionsMenu from "../../../components/Common/ActionsMenu"
@@ -120,8 +121,12 @@ function ChatCard({
               variant="subtle"
               fontSize="xs"
               borderRadius="full"
+              display="flex"
+              alignItems="center"
+              gap={1}
             >
-              🕐 {item.created_at ? formatDate(item.created_at) : "Recente"}
+              <Icon as={FiClock} boxSize={3} />
+              {item.created_at ? formatDate(item.created_at) : "Recente"}
             </Badge>
           </HStack>
         </VStack>
@@ -245,7 +250,7 @@ export default function ChatListPage() {
           <GiScrollUnfurled /> Chat History
         </Heading>
         <Text color={textColor} mt={2} opacity={0.8}>
-          📜 Your chronicles of adventures past
+          Your chronicles of adventures past
         </Text>
       </Box>
 

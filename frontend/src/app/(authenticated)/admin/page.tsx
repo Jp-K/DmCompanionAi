@@ -20,7 +20,8 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { useSearchParams } from "next/navigation"
-import { GiCrown } from "react-icons/gi"
+import { GiCrown, GiCrossedSwords } from "react-icons/gi"
+import { FiCheck, FiX } from "react-icons/fi"
 
 import { UsersService } from "../../../client"
 import ActionsMenu from "../../../components/Common/ActionsMenu"
@@ -131,8 +132,11 @@ function UsersTable() {
                         px={2}
                         py={1}
                         borderRadius="md"
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
                       >
-                        👑 Admin
+                        <Icon as={GiCrown} /> Admin
                       </Badge>
                     ) : (
                       <Badge 
@@ -142,8 +146,11 @@ function UsersTable() {
                         px={2}
                         py={1}
                         borderRadius="md"
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
                       >
-                        ⚔️ User
+                        <Icon as={GiCrossedSwords} /> User
                       </Badge>
                     )}
                   </Td>
@@ -156,8 +163,11 @@ function UsersTable() {
                         px={2}
                         py={1}
                         borderRadius="md"
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
                       >
-                        ✓ Active
+                        <Icon as={FiCheck} /> Active
                       </Badge>
                     ) : (
                       <Badge 
@@ -167,8 +177,11 @@ function UsersTable() {
                         px={2}
                         py={1}
                         borderRadius="md"
+                        display="flex"
+                        alignItems="center"
+                        gap={1}
                       >
-                        ✗ Inactive
+                        <Icon as={FiX} /> Inactive
                       </Badge>
                     )}
                   </Td>

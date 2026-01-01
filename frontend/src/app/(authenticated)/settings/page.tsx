@@ -14,7 +14,9 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react"
 import { useQueryClient } from "@tanstack/react-query"
-import { GiCog } from "react-icons/gi"
+import { GiCog, GiScrollUnfurled } from "react-icons/gi"
+import { FiLock, FiAlertTriangle } from "react-icons/fi"
+import { IoColorPaletteOutline } from "react-icons/io5"
 
 import type { UserPublic } from "../../../client"
 import Appearance from "../../../components/UserSettings/Appearance"
@@ -23,10 +25,10 @@ import DeleteAccount from "../../../components/UserSettings/DeleteAccount"
 import UserInformation from "../../../components/UserSettings/UserInformation"
 
 const tabsConfig = [
-  { title: "📜 Profile", component: UserInformation },
-  { title: "🔐 Password", component: ChangePassword },
-  { title: "🎨 Appearance", component: Appearance },
-  { title: "⚠️ Danger Zone", component: DeleteAccount },
+  { title: "Profile", component: UserInformation },
+  { title: "Password", component: ChangePassword },
+  { title: "Appearance", component: Appearance },
+  { title: "Danger Zone", component: DeleteAccount },
 ]
 
 export default function SettingsPage() {

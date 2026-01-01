@@ -18,7 +18,8 @@ import {
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { marked } from "marked"
-import { GiSpellBook, GiMagicSwirl } from "react-icons/gi"
+import { GiSpellBook, GiMagicSwirl, GiCrossedSwords, GiDragonHead } from "react-icons/gi"
+import { FiSend } from "react-icons/fi"
 
 import { ChatsService } from "../../../client"
 
@@ -96,7 +97,7 @@ function Chat() {
     }
 
     .message-content ul li::before {
-      content: "⚔️ ";
+      content: "• ";
     }
 
     .message-content ol {
@@ -284,8 +285,15 @@ function Chat() {
               fontFamily="'Cinzel', serif"
               mb={2}
               fontWeight="bold"
+              display="flex"
+              alignItems="center"
+              gap={1}
             >
-              {message.sender === "user" ? "⚔️ Adventurer" : "🐉 DM Companion"}
+              {message.sender === "user" ? (
+                <><Icon as={GiCrossedSwords} /> Adventurer</>
+              ) : (
+                <><Icon as={GiDragonHead} /> DM Companion</>
+              )}
             </Text>
             <Text
               className="message-content"
@@ -313,8 +321,11 @@ function Chat() {
               fontFamily="'Cinzel', serif"
               mb={2}
               fontWeight="bold"
+              display="flex"
+              alignItems="center"
+              gap={1}
             >
-              🐉 DM Companion
+              <Icon as={GiDragonHead} /> DM Companion
             </Text>
             <Text
               className="message-content"
@@ -365,9 +376,9 @@ function Chat() {
           fontFamily="'Cinzel', serif"
           px={6}
           isLoading={loading}
-          loadingText="✨"
+          leftIcon={<Icon as={FiSend} />}
         >
-          ⚡ Cast
+          Send
         </Button>
       </Flex>
     </Flex>

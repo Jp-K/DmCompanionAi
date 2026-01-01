@@ -70,7 +70,7 @@ export default function DashboardPage() {
           Welcome, Adventurer
         </Heading>
         <Text color={textColor} fontSize="xl" opacity={0.9}>
-          ⚔️ {currentUser?.full_name || currentUser?.email || "Brave Hero"} ⚔️
+          {currentUser?.full_name || currentUser?.email || "Brave Hero"}
         </Text>
         <Text color={textColor} mt={2} opacity={0.7}>
           Your DM Companion awaits your command
