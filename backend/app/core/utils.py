@@ -61,7 +61,7 @@ def generate_embedding(text: str, encoder: SentenceTransformer | None = None) ->
 
 def load_spells() -> list[dict]:
     """Load spells from the JSON file."""
-    spells_file = DATA_SOURCE_PATH / "spells_combined.json"
+    spells_file = DATA_SOURCE_PATH / "spells.json"
     if not spells_file.exists():
         logger.warning("Spells file not found: %s", spells_file)
         return []
@@ -302,6 +302,36 @@ def create_spell_document(spell: dict) -> str:
         if higher_level:
             parts.append("")
             parts.append(f"At Higher Levels: {higher_level}")
+        
+        # Process how_to_get - sources where the spell can be obtained
+        how_to_get = spell.get("how_to_get", [])
+        if how_to_get and isinstance(how_to_get, list):
+            sources = []
+            for source_entry in how_to_get:
+                source_type = source_entry.get("type", "")
+                source_name = source_entry.get("name", "")
+                source_class = source_entry.get("class", "")
+                
+                if source_type == "class":
+                    sources.append(f"{source_name} (Class)")
+                elif source_type == "subclass" and source_class:
+                    sources.append(f"{source_name} ({source_class} Subclass)")
+                elif source_type == "feat":
+                    sources.append(f"{source_name} (Feat)")
+                elif source_type == "race":
+                    sources.append(f"{source_name} (Race)")
+                elif source_type == "background":
+                    sources.append(f"{source_name} (Background)")
+                elif source_type == "reward":
+                    sources.append(f"{source_name} (Reward)")
+                elif source_type == "item":
+                    sources.append(f"{source_name} (Item)")
+                elif source_name:
+                    sources.append(f"{source_name} ({source_type.capitalize() if source_type else 'Source'})")
+            
+            if sources:
+                parts.append("")
+                parts.append(f"Available from: {', '.join(sources)}")
         
         return "\n".join(parts)
     else:
@@ -725,6 +755,32 @@ def vectorize_and_store_data(
                     if additional_info.get("entriesHigherLevel"):
                         higher_level = _extract_entries_text(additional_info["entriesHigherLevel"])
                 
+                # Process how_to_get - sources where the spell can be obtained
+                how_to_get = spell.get("how_to_get", [])
+                available_from = []
+                if how_to_get and isinstance(how_to_get, list):
+                    for source_entry in how_to_get:
+                        source_type = source_entry.get("type", "")
+                        source_name = source_entry.get("name", "")
+                        source_class = source_entry.get("class", "")
+                        
+                        if source_type == "class":
+                            available_from.append(f"{source_name} (Class)")
+                        elif source_type == "subclass" and source_class:
+                            available_from.append(f"{source_name} ({source_class} Subclass)")
+                        elif source_type == "feat":
+                            available_from.append(f"{source_name} (Feat)")
+                        elif source_type == "race":
+                            available_from.append(f"{source_name} (Race)")
+                        elif source_type == "background":
+                            available_from.append(f"{source_name} (Background)")
+                        elif source_type == "reward":
+                            available_from.append(f"{source_name} (Reward)")
+                        elif source_type == "item":
+                            available_from.append(f"{source_name} (Item)")
+                        elif source_name:
+                            available_from.append(f"{source_name} ({source_type.capitalize() if source_type else 'Source'})")
+                
                 point = models.PointStruct(
                     id=str(uuid.uuid4()),
                     vector=embedding,
@@ -747,6 +803,7 @@ def vectorize_and_store_data(
                         "concentration": concentration,
                         "ritual": is_ritual,
                         "higher_level": higher_level if higher_level else None,
+                        "available_from": available_from if available_from else None,
                     },
                 )
                 points.append(point)
@@ -1343,6 +1400,9 @@ def search_vector_db(
     query: str,
     category: Literal["spell", "rule", "item", "action", "background", "deity", "race", "feat"] | None = None,
     limit: int = 5,
+    spell_level: int | None = None,
+    spell_school: str | None = None,
+    available_from_filter: str | None = None,
 ) -> list[dict]:
     """
     Search the vector database for similar content.
@@ -1351,6 +1411,9 @@ def search_vector_db(
         query: The search query text
         category: Optional category filter ("spell", "rule", "item", "action", "background", "deity", "race", "feat")
         limit: Maximum number of results to return
+        spell_level: Optional filter for spell level (0-9)
+        spell_school: Optional filter for spell school (e.g., "Evocation", "Abjuration")
+        available_from_filter: Optional filter for spell source (e.g., "Wizard", "Cleric")
         
     Returns:
         List of matching documents with scores
@@ -1361,12 +1424,36 @@ def search_vector_db(
     # Generate embedding for the query
     query_embedding = encoder.encode(query).tolist()
     
-    # Build filter if category is specified
-    query_filter = None
+    # Build filter conditions
+    filter_conditions = []
+    
     if category:
-        query_filter = models.Filter(
-            must=[models.FieldCondition(key="category", match=models.MatchValue(value=category))]
+        filter_conditions.append(
+            models.FieldCondition(key="category", match=models.MatchValue(value=category))
         )
+    
+    if spell_level is not None:
+        filter_conditions.append(
+            models.FieldCondition(key="level", match=models.MatchValue(value=spell_level))
+        )
+    
+    if spell_school:
+        filter_conditions.append(
+            models.FieldCondition(key="school", match=models.MatchValue(value=spell_school))
+        )
+    
+    if available_from_filter:
+        # Use match_any to search within the available_from array
+        filter_conditions.append(
+            models.FieldCondition(
+                key="available_from",
+                match=models.MatchAny(any=[f"{available_from_filter} (Class)"])
+            )
+        )
+    
+    query_filter = None
+    if filter_conditions:
+        query_filter = models.Filter(must=filter_conditions)
     
     # Search using query_points
     results = qdrant_client.query_points(
@@ -1404,6 +1491,8 @@ def search_vector_db(
             "feat_category": hit.payload.get("feat_category"),
             "prerequisites": hit.payload.get("prerequisites"),
             "ability_increase": hit.payload.get("ability_increase"),
+            # Spell sources
+            "available_from": hit.payload.get("available_from"),
         }
         for hit in results.points
     ]
