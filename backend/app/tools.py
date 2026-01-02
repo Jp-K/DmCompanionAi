@@ -3,12 +3,20 @@ Tools for LangChain agent to search and retrieve D&D information from Qdrant vec
 
 Uses SentenceTransformer for local embeddings (no external API required).
 """
-from typing import List, Literal
+from typing import List, Literal, Optional, Type
 
 from langchain.tools import BaseTool
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from app.core.utils import search_vector_db, get_collection_stats
+
+
+class SpellSearchInput(BaseModel):
+    """Input schema for spell search."""
+    query: str = Field(default="", description="Spell name or description of magical effects to search for. Can be empty when using filters.")
+    level: Optional[int] = Field(default=None, description="Filter by spell level (0 for cantrips, 1-9 for spell levels)")
+    school: Optional[str] = Field(default=None, description="Filter by school (Abjuration, Conjuration, Divination, Enchantment, Evocation, Illusion, Necromancy, Transmutation)")
+    class_name: Optional[str] = Field(default=None, description="Filter by class that can cast the spell (Wizard, Cleric, Bard, Druid, Paladin, Ranger, Sorcerer, Warlock)")
 
 
 class RPGRulesSearchTool(BaseTool):
@@ -40,13 +48,13 @@ class RPGRulesSearchTool(BaseTool):
                 title = result.get("title", "Sem título")
                 source = result.get("source", "Unknown")
                 page = result.get("page", "N/A")
-                description = result.get("description", "")[:500]
+                description = result.get("description", "")
                 score = result.get("score", 0)
                 
                 formatted_results.append(
                     f"### Resultado {i}: {title} (Score: {score:.2f})\n"
                     f"**Fonte:** {source} (Página {page})\n\n"
-                    f"{description}...\n"
+                    f"{description}\n"
                 )
             
             return "\n".join(formatted_results)
@@ -63,47 +71,86 @@ class SpellsSearchTool(BaseTool):
     """Tool for searching spells in the Qdrant vector database."""
     
     name: str = "spells_search"
-    description: str = """
-    Use this tool to search for information about spells and magical abilities.
-    Input should be a spell name or description of magical effects you want to find.
+    description: str = """Use this tool to search for information about spells and magical abilities.
+    You can filter by level (0 for cantrips, 1-9), school, or class that can cast the spell."""
+    args_schema: Type[BaseModel] = SpellSearchInput
     
-    Examples of good inputs:
-    - "Fireball"
-    - "Magia de cura"
-    - "Feitiços de invocação"
-    - "Magias que causam dano de fogo"
-    """
-    
-    def _run(self, query: str) -> str:
+    def _run(
+        self, 
+        query: str = "",
+        level: Optional[int] = None,
+        school: Optional[str] = None,
+        class_name: Optional[str] = None,
+    ) -> str:
         """Execute the search for spells."""
         try:
-            results = search_vector_db(query, category="spell", limit=3)
+            # Use a generic query if none provided but filters are present
+            search_query = query if query else "spell"
+            
+            results = search_vector_db(
+                search_query, 
+                category="spell", 
+                limit=5,
+                spell_level=level,
+                spell_school=school,
+                available_from_filter=class_name,
+            )
             
             if not results:
-                return f"Não foram encontradas magias relacionadas a '{query}'."
+                filter_info = []
+                if level is not None:
+                    filter_info.append(f"nível {level}")
+                if school:
+                    filter_info.append(f"escola {school}")
+                if class_name:
+                    filter_info.append(f"classe {class_name}")
+                filter_str = f" com filtros: {', '.join(filter_info)}" if filter_info else ""
+                return f"Não foram encontradas magias relacionadas a '{query}'{filter_str}."
             
             formatted_results = []
             for i, result in enumerate(results, 1):
                 title = result.get("title", "Sem nome")
                 source = result.get("source", "Unknown")
                 page = result.get("page", "N/A")
-                description = result.get("description", "")[:400]
+                description = result.get("description", "")
                 score = result.get("score", 0)
+                spell_level = result.get("level", 0)
+                spell_school = result.get("school", "")
+                available_from = result.get("available_from", [])
                 
-                formatted_results.append(
+                # Format level
+                if spell_level == 0:
+                    level_str = "Truque"
+                else:
+                    ordinal = {1: "1º", 2: "2º", 3: "3º", 4: "4º", 5: "5º", 6: "6º", 7: "7º", 8: "8º", 9: "9º"}.get(spell_level, f"{spell_level}º")
+                    level_str = f"{ordinal} nível"
+                
+                result_text = (
                     f"### Magia {i}: {title} (Score: {score:.2f})\n"
+                    f"**Nível:** {level_str} | **Escola:** {spell_school}\n"
                     f"**Fonte:** {source} (Página {page})\n\n"
-                    f"{description}...\n"
+                    f"{description}\n"
                 )
+                
+                if available_from:
+                    result_text += f"\n**Disponível em:** {', '.join(available_from)}\n"
+                
+                formatted_results.append(result_text)
             
             return "\n".join(formatted_results)
         
         except Exception as e:
             return f"Erro ao buscar magias: {str(e)}"
     
-    async def _arun(self, query: str) -> str:
+    async def _arun(
+        self, 
+        query: str = "",
+        level: Optional[int] = None,
+        school: Optional[str] = None,
+        class_name: Optional[str] = None,
+    ) -> str:
         """Async version of the tool."""
-        return self._run(query)
+        return self._run(query, level, school, class_name)
 
 
 class ItemsSearchTool(BaseTool):
@@ -134,13 +181,13 @@ class ItemsSearchTool(BaseTool):
                 title = result.get("title", "Sem nome")
                 source = result.get("source", "Unknown")
                 page = result.get("page", "N/A")
-                description = result.get("description", "")[:400]
+                description = result.get("description", "")
                 score = result.get("score", 0)
                 
                 formatted_results.append(
                     f"### Item {i}: {title} (Score: {score:.2f})\n"
                     f"**Fonte:** {source} (Página {page})\n\n"
-                    f"{description}...\n"
+                    f"{description}\n"
                 )
             
             return "\n".join(formatted_results)
@@ -181,13 +228,13 @@ class ActionsSearchTool(BaseTool):
                 title = result.get("title", "Sem nome")
                 source = result.get("source", "Unknown")
                 page = result.get("page", "N/A")
-                description = result.get("description", "")[:400]
+                description = result.get("description", "")
                 score = result.get("score", 0)
                 
                 formatted_results.append(
                     f"### Ação {i}: {title} (Score: {score:.2f})\n"
                     f"**Fonte:** {source} (Página {page})\n\n"
-                    f"{description}...\n"
+                    f"{description}\n"
                 )
             
             return "\n".join(formatted_results)
@@ -228,13 +275,13 @@ class BackgroundsSearchTool(BaseTool):
                 title = result.get("title", "Sem nome")
                 source = result.get("source", "Unknown")
                 page = result.get("page", "N/A")
-                description = result.get("description", "")[:400]
+                description = result.get("description", "")
                 score = result.get("score", 0)
                 
                 formatted_results.append(
                     f"### Antecedente {i}: {title} (Score: {score:.2f})\n"
                     f"**Fonte:** {source} (Página {page})\n\n"
-                    f"{description}...\n"
+                    f"{description}\n"
                 )
             
             return "\n".join(formatted_results)
@@ -275,13 +322,13 @@ class DeitiesSearchTool(BaseTool):
                 title = result.get("title", "Sem nome")
                 source = result.get("source", "Unknown")
                 page = result.get("page", "N/A")
-                description = result.get("description", "")[:400]
+                description = result.get("description", "")
                 score = result.get("score", 0)
                 
                 formatted_results.append(
                     f"### Divindade {i}: {title} (Score: {score:.2f})\n"
                     f"**Fonte:** {source} (Página {page})\n\n"
-                    f"{description}...\n"
+                    f"{description}\n"
                 )
             
             return "\n".join(formatted_results)
@@ -322,13 +369,13 @@ class RacesSearchTool(BaseTool):
                 title = result.get("title", "Sem nome")
                 source = result.get("source", "Unknown")
                 page = result.get("page", "N/A")
-                description = result.get("description", "")[:400]
+                description = result.get("description", "")
                 score = result.get("score", 0)
                 
                 formatted_results.append(
                     f"### Raça {i}: {title} (Score: {score:.2f})\n"
                     f"**Fonte:** {source} (Página {page})\n\n"
-                    f"{description}...\n"
+                    f"{description}\n"
                 )
             
             return "\n".join(formatted_results)
@@ -369,13 +416,13 @@ class FeatsSearchTool(BaseTool):
                 title = result.get("title", "Sem nome")
                 source = result.get("source", "Unknown")
                 page = result.get("page", "N/A")
-                description = result.get("description", "")[:400]
+                description = result.get("description", "")
                 score = result.get("score", 0)
                 
                 formatted_results.append(
                     f"### Talento {i}: {title} (Score: {score:.2f})\n"
                     f"**Fonte:** {source} (Página {page})\n\n"
-                    f"{description}...\n"
+                    f"{description}\n"
                 )
             
             return "\n".join(formatted_results)
@@ -419,8 +466,11 @@ class GeneralSearchTool(BaseTool):
                 category = result.get("category", "unknown")
                 source = result.get("source", "Unknown")
                 page = result.get("page", "N/A")
-                description = result.get("description", "")[:300]
+                description = result.get("description", "")
                 score = result.get("score", 0)
+                available_from = result.get("available_from", [])
+                level = result.get("level", 0)
+                school = result.get("school", "")
                 
                 # Map category to Portuguese
                 category_map = {
@@ -435,11 +485,28 @@ class GeneralSearchTool(BaseTool):
                 }
                 category_pt = category_map.get(category, category)
                 
-                formatted_results.append(
+                # Add level info for spells
+                level_info = ""
+                if category == "spell":
+                    if level == 0:
+                        level_info = " | **Nível:** Truque"
+                    else:
+                        ordinal = {1: "1º", 2: "2º", 3: "3º", 4: "4º", 5: "5º", 6: "6º", 7: "7º", 8: "8º", 9: "9º"}.get(level, f"{level}º")
+                        level_info = f" | **Nível:** {ordinal}"
+                    if school:
+                        level_info += f" | **Escola:** {school}"
+                
+                result_text = (
                     f"### {i}. [{category_pt}] {title} (Score: {score:.2f})\n"
-                    f"**Fonte:** {source} (Página {page})\n\n"
-                    f"{description}...\n"
+                    f"**Fonte:** {source} (Página {page}){level_info}\n\n"
+                    f"{description}\n"
                 )
+                
+                # Add available_from for spells
+                if category == "spell" and available_from:
+                    result_text += f"\n**Disponível em:** {', '.join(available_from)}\n"
+                
+                formatted_results.append(result_text)
             
             return "\n".join(formatted_results)
         

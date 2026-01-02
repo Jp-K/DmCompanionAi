@@ -57,7 +57,8 @@ def create_agent_executor(chat_history: list = None):
     llm = ChatOpenAI(
         model="gpt-4o-mini",
         temperature=0.1,
-        openai_api_key=settings.OPENAI_API_KEY
+        openai_api_key=settings.OPENAI_API_KEY,
+        store=True
     )
     
     tools = get_available_tools()
@@ -158,7 +159,8 @@ async def agent_stream(message: str, chat_history: list = None) -> AsyncGenerato
             model="gpt-4o-mini",
             temperature=0.1,
             openai_api_key=settings.OPENAI_API_KEY,
-            streaming=True
+            streaming=True,
+            store=True
         )
         
         tools = get_available_tools()
